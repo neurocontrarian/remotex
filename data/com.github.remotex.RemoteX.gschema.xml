@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="com.github.remotex.RemoteX" path="/com/github/remotex/RemoteX/">
+    <key name="window-width" type="i">
+      <default>900</default>
+      <summary>Window width</summary>
+    </key>
+    <key name="window-height" type="i">
+      <default>600</default>
+      <summary>Window height</summary>
+    </key>
+    <key name="window-maximized" type="b">
+      <default>false</default>
+      <summary>Window maximized</summary>
+    </key>
+    <key name="command-timeout" type="i">
+      <default>30</default>
+      <summary>Default command timeout in seconds</summary>
+    </key>
+    <key name="confirm-before-run" type="b">
+      <default>false</default>
+      <summary>Ask for confirmation before executing commands</summary>
+    </key>
+    <key name="grid-columns" type="i">
+      <default>4</default>
+      <summary>Number of buttons per row in the grid</summary>
+    </key>
+    <key name="hidden-categories" type="as">
+      <default>[]</default>
+      <summary>Categories hidden from the category bar and button grid</summary>
+    </key>
+    <key name="button-size" type="s">
+      <choices>
+        <choice value="small"/>
+        <choice value="medium"/>
+        <choice value="large"/>
+      </choices>
+      <default>'medium'</default>
+      <summary>Button size in the grid (small, medium, large)</summary>
+    </key>
+    <key name="always-on-top" type="b">
+      <default>false</default>
+      <summary>Keep window always on top of other windows</summary>
+    </key>
+    <key name="icon-search-paths" type="as">
+      <default>[]</default>
+      <summary>Custom icon directories searched before the bundled icon set</summary>
+    </key>
+    <key name="button-theme" type="s">
+      <choices>
+        <choice value="bold"/>
+        <choice value="cards"/>
+        <choice value="phone"/>
+        <choice value="neon"/>
+        <choice value="retro"/>
+        <choice value="custom"/>
+      </choices>
+      <default>'bold'</default>
+      <summary>Button visual theme (Pro)</summary>
+    </key>
+    <key name="custom-theme-path" type="s">
+      <default>''</default>
+      <summary>Path to user-provided CSS theme file (Pro)</summary>
+    </key>
+    <key name="language" type="s">
+      <default>'system'</default>
+      <summary>Interface language code (system, en, fr, de, es, it, ja, zh, ko, ru, ar, hi, pt)</summary>
+    </key>
+    <key name="color-scheme" type="s">
+      <choices>
+        <choice value="system"/>
+        <choice value="light"/>
+        <choice value="dark"/>
+      </choices>
+      <default>'system'</default>
+      <summary>Application color scheme (system / light / dark)</summary>
+    </key>
+  </schema>
+</schemalist>

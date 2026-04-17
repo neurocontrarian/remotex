@@ -1,0 +1,42 @@
+RemoteX — Dual License
+======================
+
+Copyright (c) 2025 neurocontrarian
+
+## Core — MIT License
+
+The source code in this repository, **excluding** the `src/pro/` directory,
+is licensed under the MIT License:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Pro module — Proprietary License
+
+The source code in the `src/pro/` directory is proprietary software.
+
+Copyright (c) 2025 neurocontrarian. All Rights Reserved.
+
+You may read and study this code for personal, non-commercial purposes.
+You may NOT copy, modify, distribute, sublicense, or use this code to
+circumvent the RemoteX Pro licensing system, whether in part or in whole,
+without explicit written permission from the copyright holder.
+
+Purchasing a RemoteX Pro license grants you the right to USE the Pro
+features of RemoteX as provided. It does not grant you any rights to
+the source code of the `src/pro/` module beyond the above.

@@ -1,0 +1,157 @@
+/* RemoteX application styles */
+
+/* ── Linux Mint / non-Adwaita theme workaround ──────────────────────── */
+/* libadwaita injects a .edit-icon image (document-edit-symbolic) into   */
+/* every Adw.EntryRow. On themes where that icon is missing it renders   */
+/* as an empty placeholder. Hide it globally — the floating label        */
+/* already makes each field self-explanatory.                            */
+.edit-icon {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.button-tile {
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 120px;
+  min-height: 120px;
+}
+
+.button-tile .tile-label {
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.button-tile.running {
+  opacity: 0.7;
+}
+
+.button-tile.success {
+  background-color: alpha(@success_color, 0.3);
+}
+
+.button-tile.error {
+  background-color: alpha(@error_color, 0.3);
+}
+
+.button-tile.selected {
+  outline: 3px solid @accent_color;
+  outline-offset: -3px;
+}
+
+.button-tile.dragging {
+  opacity: 0.4;
+}
+
+.button-tile.drop-target {
+  outline: 2px solid @accent_color;
+  outline-offset: -2px;
+}
+
+/* ── Bold theme (default) ───────────────────────────────────────────── */
+.theme-bold .button-tile {
+  background-color: @accent_bg_color;
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.28);
+}
+.theme-bold .button-tile:hover {
+  background-color: shade(@accent_bg_color, 1.12);
+  box-shadow: 0 5px 18px rgba(0,0,0,0.34);
+}
+.theme-bold .button-tile:active {
+  background-color: shade(@accent_bg_color, 0.88);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.theme-bold .button-tile .tile-label {
+  color: @accent_fg_color;
+  font-weight: bold;
+}
+
+/* ── Cards theme ────────────────────────────────────────────────────── */
+.theme-cards .button-tile {
+  background: @card_bg_color;
+  border-radius: 12px;
+  border: 2px solid alpha(@accent_color, 0.28);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.12);
+}
+.theme-cards .button-tile:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.26), 0 2px 6px rgba(0,0,0,0.14);
+  border-color: alpha(@accent_color, 0.65);
+}
+.theme-cards .button-tile:active {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  background: mix(@card_bg_color, @accent_color, 0.88);
+}
+
+/* ── Phone keys theme ───────────────────────────────────────────────── */
+.theme-phone .button-tile {
+  background: linear-gradient(180deg, #f5f5f5 0%, #d8d8d8 100%);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.theme-phone .button-tile:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e8e8e8 100%);
+}
+.theme-phone .button-tile:active {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+  background: linear-gradient(180deg, #d0d0d0 0%, #e0e0e0 100%);
+}
+
+/* ── Neon theme ─────────────────────────────────────────────────────── */
+.theme-neon .button-tile {
+  background-color: #0d0d0d;
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0,200,255,0.25), inset 0 0 12px rgba(0,200,255,0.05);
+}
+.theme-neon .button-tile:hover {
+  border-color: rgba(0,200,255,0.6);
+  box-shadow: 0 0 18px rgba(0,200,255,0.5), inset 0 0 12px rgba(0,200,255,0.1);
+}
+.theme-neon .button-tile .tile-label {
+  color: #00c8ff;
+  font-weight: bold;
+}
+
+/* ── Retro theme ────────────────────────────────────────────────────── */
+.theme-retro .button-tile {
+  background: linear-gradient(135deg, #e8622a 0%, #f0981a 100%);
+  border-radius: 4px;
+  border: 3px solid #993300;
+  box-shadow: 4px 4px 0 #000000;
+}
+.theme-retro .button-tile:hover {
+  background: linear-gradient(135deg, #ff7a3d 0%, #ffb030 100%);
+}
+.theme-retro .button-tile:active {
+  box-shadow: 1px 1px 0 #000000;
+}
+.theme-retro .button-tile .tile-label {
+  color: #ffffff;
+  font-weight: bold;
+}
+
+/* ── Button size variants ───────────────────────────────────────────── */
+.button-tile.size-small {
+  min-width: 80px;
+  min-height: 80px;
+  padding: 8px;
+}
+
+.button-tile.size-small .tile-label {
+  font-size: 0.75em;
+}
+
+.button-tile.size-large {
+  min-width: 160px;
+  min-height: 160px;
+  padding: 16px;
+}
+
+.button-tile.size-large .tile-label {
+  font-size: 1.1em;
+}

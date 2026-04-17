@@ -1,0 +1,23 @@
+#!/usr/bin/env @PYTHON@
+import os
+import sys
+
+pkgdatadir = '@pkgdatadir@'
+localedir = '@localedir@'
+schemadir = '@schemadir@'
+
+sys.path.insert(1, pkgdatadir)
+
+if not os.environ.get('GSETTINGS_SCHEMA_DIR'):
+    os.environ['GSETTINGS_SCHEMA_DIR'] = schemadir
+
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gio
+
+resource = Gio.Resource.load(os.path.join(pkgdatadir, 'remotex.gresource'))
+resource._register()
+
+from main import main
+sys.exit(main())

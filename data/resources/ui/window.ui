@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="libadwaita" version="1.0"/>
+  <template class="RemotexWindow" parent="AdwApplicationWindow">
+    <property name="title" translatable="yes">RemoteX</property>
+    <property name="default-width">900</property>
+    <property name="default-height">600</property>
+    <child>
+      <object class="AdwToolbarView" id="toolbar_view">
+        <child type="top">
+          <object class="AdwHeaderBar" id="header_bar">
+            <child type="start">
+              <object class="GtkButton" id="add_button">
+                <property name="icon-name">list-add-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Add a button (Ctrl+N)</property>
+                <property name="action-name">win.add-button</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkMenuButton" id="menu_button">
+                <property name="icon-name">open-menu-symbolic</property>
+                <property name="menu-model">primary_menu</property>
+                <property name="tooltip-text" translatable="yes">Main menu</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkToggleButton" id="search_button">
+                <property name="icon-name">system-search-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Search</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="top">
+          <object class="GtkSearchBar" id="search_bar">
+            <property name="key-capture-widget">RemotexWindow</property>
+            <binding name="search-mode-enabled">
+              <lookup name="active">search_button</lookup>
+            </binding>
+            <child>
+              <object class="GtkSearchEntry" id="search_entry">
+                <property name="placeholder-text" translatable="yes">Search commands...</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="AdwToastOverlay" id="toast_overlay">
+            <property name="child">
+              <object class="GtkStack" id="main_stack">
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">grid</property>
+                    <property name="child">
+                      <object class="GtkOverlay" id="grid_overlay">
+                        <property name="hexpand">true</property>
+                        <property name="vexpand">true</property>
+                        <property name="child">
+                          <object class="GtkScrolledWindow">
+                            <property name="hexpand">true</property>
+                            <property name="vexpand">true</property>
+                            <child>
+                              <object class="GtkFlowBox" id="flow_box">
+                            <property name="homogeneous">true</property>
+                            <property name="halign">center</property>
+                            <property name="valign">start</property>
+                            <property name="min-children-per-line">3</property>
+                            <property name="max-children-per-line">8</property>
+                            <property name="selection-mode">none</property>
+                            <property name="activate-on-single-click">true</property>
+                            <property name="margin-top">12</property>
+                            <property name="margin-bottom">12</property>
+                            <property name="margin-start">12</property>
+                            <property name="margin-end">12</property>
+                            <property name="row-spacing">8</property>
+                            <property name="column-spacing">8</property>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkStackPage">
+                    <property name="name">empty</property>
+                    <property name="child">
+                      <object class="AdwStatusPage" id="placeholder_page">
+                        <property name="icon-name">utilities-terminal-symbolic</property>
+                        <property name="title" translatable="yes">No commands yet</property>
+                        <property name="description" translatable="yes">Click + to add your first button.</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </child>
+  </template>
+
+  <menu id="primary_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Always on Top</attribute>
+        <attribute name="action">win.always-on-top</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Manage Machines</attribute>
+        <attribute name="action">app.manage-machines</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Preferences</attribute>
+        <attribute name="action">app.preferences</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Keyboard Shortcuts</attribute>
+        <attribute name="action">app.shortcuts</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">About RemoteX</attribute>
+        <attribute name="action">app.about</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

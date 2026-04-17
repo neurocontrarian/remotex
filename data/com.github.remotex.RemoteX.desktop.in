@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=RemoteX
+Comment=Télécommande graphique pour commandes locales et SSH
+Exec=remotex
+Icon=@icon@
+Terminal=false
+Type=Application
+Categories=System;Utility;
+Keywords=ssh;remote;command;terminal;
