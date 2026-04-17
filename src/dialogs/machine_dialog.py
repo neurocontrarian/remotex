@@ -1,7 +1,16 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+from contextlib import contextmanager
 from gi.repository import Gtk, Adw, GLib
+
+@contextmanager
+def _block_handler(widget, handler):
+    widget.handler_block_by_func(handler)
+    try:
+        yield
+    finally:
+        widget.handler_unblock_by_func(handler)
 from pathlib import Path
 from typing import Callable
 
@@ -54,7 +63,6 @@ class _MachineDialog:
         header = Adw.HeaderBar()
         toolbar_view.add_top_bar(header)
 
-        # Save button
         self._save_btn = Gtk.Button(label=_("Save"))
         self._save_btn.add_css_class("suggested-action")
         self._save_btn.connect("clicked", self._on_save)
@@ -66,46 +74,44 @@ class _MachineDialog:
                       margin_top=16, margin_bottom=16,
                       margin_start=16, margin_end=16)
 
-        # ── Connection details ──────────────────────────────────────────
-        conn_group = Adw.PreferencesGroup(title=_("Connection"))
-        box.append(conn_group)
+        box.append(self._build_connection_group())
+        box.append(self._build_icon_group())
+        box.append(self._build_test_group())
+        box.append(self._build_key_setup_group())
 
+        scroll.set_child(box)
+        toolbar_view.set_content(scroll)
+        self.dialog.set_content(toolbar_view)
+
+    def _build_connection_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Connection"))
         self._name_row = Adw.EntryRow(title=_("Name"))
-        conn_group.add(self._name_row)
-
+        group.add(self._name_row)
         self._host_row = Adw.EntryRow(title=_("Host / IP"))
-        conn_group.add(self._host_row)
-
+        group.add(self._host_row)
         self._user_row = Adw.EntryRow(title=_("SSH User"))
-        conn_group.add(self._user_row)
-
+        group.add(self._user_row)
         self._port_row = Adw.EntryRow(title=_("Port"))
         self._port_row.set_text("22")
-        conn_group.add(self._port_row)
-
+        group.add(self._port_row)
         self._key_row = Adw.EntryRow(title=_("SSH Key Path"))
         self._key_row.set_text(str(Path.home() / ".ssh" / "id_ed25519"))
-        conn_group.add(self._key_row)
+        group.add(self._key_row)
+        return group
 
-        # ── Appearance ──────────────────────────────────────────────────
-        appearance_group = Adw.PreferencesGroup(title=_("Appearance"))
-        box.append(appearance_group)
-
+    def _build_icon_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Appearance"))
         icon_row = Adw.ActionRow(title=_("Icon"))
         icon_row.set_subtitle(_("Choose an icon to represent this machine"))
         self._icon_name = "pc-display"
-
         self._icon_preview = Gtk.Picture(valign=Gtk.Align.CENTER)
         self._icon_preview.set_size_request(32, 32)
         icon_row.add_prefix(self._icon_preview)
 
         icon_flow = Gtk.FlowBox(
-            max_children_per_line=8,
-            min_children_per_line=4,
+            max_children_per_line=8, min_children_per_line=4,
             selection_mode=Gtk.SelectionMode.NONE,
-            hexpand=True,
-            margin_top=6,
-            margin_bottom=6,
+            hexpand=True, margin_top=6, margin_bottom=6,
         )
         self._icon_btns: list[tuple[str, Gtk.ToggleButton]] = []
         for icon_id, label in _MACHINE_ICONS:
@@ -124,69 +130,58 @@ class _MachineDialog:
             self._icon_btns.append((icon_id, btn))
 
         icon_row.set_activatable_widget(None)
-        appearance_group.add(icon_row)
-
+        group.add(icon_row)
         icon_flow_row = Adw.ActionRow()
         icon_flow_row.set_child(icon_flow)
-        appearance_group.add(icon_flow_row)
+        group.add(icon_flow_row)
 
         self._update_icon_preview("pc-display")
         if self._icon_btns:
             self._icon_btns[0][1].set_active(True)
+        return group
 
-        # ── Test connection ─────────────────────────────────────────────
-        test_group = Adw.PreferencesGroup()
-        box.append(test_group)
-
+    def _build_test_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup()
         test_row = Adw.ActionRow(title=_("Test Connection"),
                                  subtitle=_("Verify that SSH key authentication works"))
         self._test_btn = Gtk.Button(label=_("Test"), valign=Gtk.Align.CENTER)
         self._test_btn.connect("clicked", self._on_test_connection)
         test_row.add_suffix(self._test_btn)
-        test_group.add(test_row)
-
+        group.add(test_row)
         self._test_status = Gtk.Label(label="", xalign=0, wrap=True)
         self._test_status.add_css_class("caption")
-        test_group.add(self._test_status)
+        group.add(self._test_status)
+        return group
 
-        # ── SSH Key Setup ───────────────────────────────────────────────
-        key_group = Adw.PreferencesGroup(
+    def _build_key_setup_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(
             title=_("SSH Key Setup"),
             description=_("One-time setup — copies your key to the remote machine "
                           "so you never need a password again."),
         )
-        box.append(key_group)
-
         self._key_status_row = Adw.ActionRow(title=_("SSH Key Status"))
-        key_group.add(self._key_status_row)
+        group.add(self._key_status_row)
 
-        self._gen_row = Adw.ActionRow(
-            title=_("No key found"),
-            subtitle=_("Generate a new ed25519 key pair"),
-        )
+        self._gen_row = Adw.ActionRow(title=_("No key found"),
+                                      subtitle=_("Generate a new ed25519 key pair"))
         self._gen_btn = Gtk.Button(label=_("Generate"), valign=Gtk.Align.CENTER)
         self._gen_btn.connect("clicked", self._on_generate_key)
         self._gen_row.add_suffix(self._gen_btn)
         self._gen_row.set_visible(False)
-        key_group.add(self._gen_row)
+        group.add(self._gen_row)
 
-        # Password + copy row
         self._pwd_row = Adw.PasswordEntryRow(title=_("Remote Password"))
         self._pwd_row.set_show_apply_button(False)
-        key_group.add(self._pwd_row)
+        group.add(self._pwd_row)
 
         pwd_note = Gtk.Label(
             label=_("Password is used once to copy your SSH key — never stored"),
-            xalign=0,
-            wrap=True,
-            margin_start=12,
-            margin_end=12,
-            margin_top=2,
-            margin_bottom=4,
+            xalign=0, wrap=True,
+            margin_start=12, margin_end=12, margin_top=2, margin_bottom=4,
         )
         pwd_note.add_css_class("caption")
         pwd_note.add_css_class("dim-label")
-        key_group.add(pwd_note)
+        group.add(pwd_note)
 
         copy_row = Adw.ActionRow(
             title=_("Copy Key to Machine"),
@@ -196,15 +191,12 @@ class _MachineDialog:
         self._copy_btn.add_css_class("suggested-action")
         self._copy_btn.connect("clicked", self._on_copy_key)
         copy_row.add_suffix(self._copy_btn)
-        key_group.add(copy_row)
+        group.add(copy_row)
 
         self._copy_status = Gtk.Label(label="", xalign=0, wrap=True)
         self._copy_status.add_css_class("caption")
-        key_group.add(self._copy_status)
-
-        scroll.set_child(box)
-        toolbar_view.set_content(scroll)
-        self.dialog.set_content(toolbar_view)
+        group.add(self._copy_status)
+        return group
 
     def _update_icon_preview(self, icon_name: str):
         texture = load_icon_texture(icon_name, 32)
@@ -218,9 +210,8 @@ class _MachineDialog:
         # Deactivate other buttons
         for other_id, other_btn in self._icon_btns:
             if other_id != icon_id and other_btn.get_active():
-                other_btn.handler_block_by_func(self._on_icon_btn_toggled)
-                other_btn.set_active(False)
-                other_btn.handler_unblock_by_func(self._on_icon_btn_toggled)
+                with _block_handler(other_btn, self._on_icon_btn_toggled):
+                    other_btn.set_active(False)
         self._update_icon_preview(icon_id)
 
     def _populate_fields(self):
@@ -235,10 +226,8 @@ class _MachineDialog:
             icon_to_set = self._machine.icon_name or "pc-display"
             self._update_icon_preview(icon_to_set)
             for icon_id, btn in self._icon_btns:
-                active = (icon_id == icon_to_set)
-                btn.handler_block_by_func(self._on_icon_btn_toggled)
-                btn.set_active(active)
-                btn.handler_unblock_by_func(self._on_icon_btn_toggled)
+                with _block_handler(btn, self._on_icon_btn_toggled):
+                    btn.set_active(icon_id == icon_to_set)
 
     def _refresh_key_status(self):
         keys = self._ssh_key_svc.find_existing_keys()
@@ -263,9 +252,17 @@ class _MachineDialog:
         if not name or not host or not user:
             return None
 
-        try:
-            port = int(port_text) if port_text else 22
-        except ValueError:
+        if port_text:
+            try:
+                port = int(port_text)
+                if not (1 <= port <= 65535):
+                    raise ValueError("out of range")
+            except ValueError:
+                self._port_row.add_css_class("error")
+                GLib.timeout_add(2000, lambda: self._port_row.remove_css_class("error") or False)
+                self._test_status.set_text(_("Port must be a number between 1 and 65535"))
+                return None
+        else:
             port = 22
 
         if self._is_edit and self._machine:

@@ -2,6 +2,8 @@
 
 **A visual command launcher for Linux — run local and SSH commands with one click.**
 
+**[Full documentation](https://neurocontrarian.github.io/remotex)**
+
 > No more typing the same commands over and over. Build a button grid for the tasks you repeat every day.
 
 <!-- [SCREENSHOT: main window with a full grid of colored buttons, category bar visible] -->

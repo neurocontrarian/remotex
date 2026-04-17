@@ -103,8 +103,8 @@ La couleur de fond de la tuile et la couleur de l'étiquette peuvent être perso
 
 Après l'exécution d'une commande, une petite notification toast remonte depuis le bas de la fenêtre :
 
-- **Toast vert** — la commande a réussi
-- **Toast rouge** — la commande a échoué (code de sortie non nul)
+- **Toast de succès** — la commande s'est terminée avec succès
+- **Toast d'échec** — la commande a échoué (code de sortie non nul)
 
 Pour les commandes en mode **Afficher la sortie**, ou pour toute commande qui échoue, une boîte de dialogue s'ouvre automatiquement avec le `stdout` et le `stderr` complets.
 

@@ -54,7 +54,7 @@ Determines where the command runs. The list shows **Local** at the top, followed
 
 ### Icon
 
-Choose an icon from the built-in icon picker. The picker scans your desktop theme at runtime and shows only icons that can be rendered correctly on your system.
+Choose an icon from the built-in icon picker. Only icons available and renderable on your system are shown.
 
 Type in the search field to filter by name. The selected icon is previewed on the button preview at the top of the dialog.
 

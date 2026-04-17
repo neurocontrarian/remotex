@@ -32,7 +32,7 @@
 3. Paste your license key in the field
 4. Click **Activate Pro**
 
-Your key is validated and stored locally at `~/.config/remotex/license.key`. An internet connection is required for the initial activation.
+An internet connection is required for the initial activation.
 
 ## Yearly license — renewal
 

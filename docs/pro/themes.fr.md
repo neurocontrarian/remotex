@@ -33,7 +33,9 @@ Style monochrome inspiré du terminal avec une texture de lignes de balayage. Fo
 
 ## Captures d'écran
 
-![Thème Neon](../assets/theme-neon.png){ width=49% } ![Thème Retro](../assets/theme-retro.png){ width=49% }
+![Thème Gras](../assets/theme-bold.png){ width=49% } ![Thème Neon](../assets/theme-neon.png){ width=49% }
+
+![Thème Retro](../assets/theme-retro.png){ width=49% }
 
 ---
 

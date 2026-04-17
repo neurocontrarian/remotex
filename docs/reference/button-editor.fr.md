@@ -54,7 +54,7 @@ Détermine où la commande s'exécute. La liste affiche **Local** en haut, suivi
 
 ### Icône
 
-Choisissez une icône dans le sélecteur d'icônes intégré. Le sélecteur analyse votre thème de bureau à l'exécution et n'affiche que les icônes pouvant être rendues correctement sur votre système.
+Choisissez une icône dans le sélecteur d'icônes intégré. Seules les icônes disponibles et rendables sur votre système sont affichées.
 
 Saisissez dans le champ de recherche pour filtrer par nom. L'icône sélectionnée est prévisualisée sur l'aperçu du bouton en haut de la boîte de dialogue.
 

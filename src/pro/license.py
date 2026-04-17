@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import platform
 import uuid as uuid_module
 from datetime import date
@@ -90,6 +91,7 @@ def _read_raw() -> dict | None:
 def _write_raw(data: dict) -> None:
     _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     _LICENSE_FILE.write_text(json.dumps(data, indent=2))
+    os.chmod(_LICENSE_FILE, 0o600)
 
 
 # ── Expiry helpers ────────────────────────────────────────────────────────────

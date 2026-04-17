@@ -1,4 +1,5 @@
 import json
+import os
 import tomllib
 import tomli_w
 import zipfile
@@ -21,6 +22,12 @@ class ConfigManager:
 
     def _ensure_config_dir(self):
         self.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        for f in (self.MACHINES_FILE, self.BUTTONS_FILE):
+            if f.exists():
+                try:
+                    os.chmod(f, 0o600)
+                except OSError:
+                    pass
 
     # --- Machines ---
 
@@ -113,9 +120,17 @@ class ConfigManager:
         bak = path.with_suffix('.toml.bak')
         with open(tmp, 'wb') as f:
             tomli_w.dump(data, f)
+        os.chmod(tmp, 0o600)
         if path.exists():
             path.replace(bak)
         tmp.replace(path)
+
+    @staticmethod
+    def _safe_extract(zf: zipfile.ZipFile, name: str, dest: Path) -> None:
+        """Extract a single archive entry, rejecting path traversal attempts."""
+        if name != Path(name).name or name in ('', '.', '..'):
+            raise ValueError(f"Unsafe entry name in archive: {name!r}")
+        zf.extract(name, dest)
 
     def _migrate_mark_defaults(self, buttons: list) -> None:
         """Mark buttons that match the default set — handles configs created before is_default existed."""
@@ -168,7 +183,7 @@ class ConfigManager:
         """Restore machines from a .remotex-machines zip archive."""
         with zipfile.ZipFile(src_path, 'r') as zf:
             if 'machines.toml' in zf.namelist():
-                zf.extract('machines.toml', self.CONFIG_DIR)
+                self._safe_extract(zf, 'machines.toml', self.CONFIG_DIR)
 
     def import_backup(self, src_path: Path, settings=None) -> None:
         """Restore config from a .remotex-backup zip archive.
@@ -180,13 +195,13 @@ class ConfigManager:
         with zipfile.ZipFile(src_path, 'r') as zf:
             names = zf.namelist()
             if 'buttons.toml' in names:
-                zf.extract('buttons.toml', self.CONFIG_DIR)
+                self._safe_extract(zf, 'buttons.toml', self.CONFIG_DIR)
                 self._merge_missing_defaults()
             if 'machines.toml' in names:
-                zf.extract('machines.toml', self.CONFIG_DIR)
+                self._safe_extract(zf, 'machines.toml', self.CONFIG_DIR)
             if 'license.key' in names:
                 _LICENSE_FILE.parent.mkdir(parents=True, exist_ok=True)
-                zf.extract('license.key', _LICENSE_FILE.parent)
+                self._safe_extract(zf, 'license.key', _LICENSE_FILE.parent)
             if 'gsettings.json' in names and settings:
                 gs = json.loads(zf.read('gsettings.json'))
                 for key, typ in self._GSETTINGS_KEYS.items():

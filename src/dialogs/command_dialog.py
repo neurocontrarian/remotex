@@ -1,8 +1,17 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+from contextlib import contextmanager
 from gi.repository import Gtk, Adw, Gdk
 from typing import Callable
+
+@contextmanager
+def _block_handler(widget, handler):
+    widget.handler_block_by_func(handler)
+    try:
+        yield
+    finally:
+        widget.handler_unblock_by_func(handler)
 
 from models.command_button import CommandButton
 from models.config import ConfigManager
@@ -93,41 +102,47 @@ class _CommandDialog:
                       margin_top=16, margin_bottom=16,
                       margin_start=16, margin_end=16)
 
-        # ── Button details ───────────────────────────────────────────────
-        details_group = Adw.PreferencesGroup(title=_("Button"))
-        box.append(details_group)
+        box.append(self._build_details_group())
+        box.append(self._build_machines_group())
+        box.append(self._build_appearance_group())
+        box.append(self._build_organisation_group())
+        box.append(self._build_behaviour_group())
 
+        scroll.set_child(box)
+        toolbar_view.set_content(scroll)
+        self.dialog.set_content(toolbar_view)
+
+    def _build_details_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Button"))
         self._name_row = Adw.EntryRow(title=_("Label"))
-        details_group.add(self._name_row)
-
+        group.add(self._name_row)
         self._command_row = Adw.EntryRow(title=_("Command"))
-        details_group.add(self._command_row)
+        group.add(self._command_row)
+        return group
 
-        machines = self._config.load_machines()
-
-        machines_group = Adw.PreferencesGroup(title=_("Target machines"))
-        machines_group.set_description(
+    def _build_machines_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Target machines"))
+        group.set_description(
             _("Select where this command can run.\n"
               "If multiple targets are selected, you will be asked which one to use at run time.")
         )
-        box.append(machines_group)
-
         self._local_switch = Adw.SwitchRow(title=_("Local (this machine)"))
         self._local_switch.set_subtitle(_("Run directly on this computer"))
-        self._local_switch.set_active(True)  # Default for new buttons
-        machines_group.add(self._local_switch)
+        self._local_switch.set_active(True)
+        group.add(self._local_switch)
 
         self._machine_switches: list[tuple[str, Adw.SwitchRow]] = []
+        machines = self._config.load_machines()
         for m in machines:
             row = Adw.SwitchRow(title=m.name)
             row.set_subtitle(f"{m.user}@{m.host}:{m.port}")
-            machines_group.add(row)
+            group.add(row)
             self._machine_switches.append((m.id, row))
 
         if machines:
             self._all_switch = Adw.SwitchRow(title=_("All machines"))
             self._all_switch.set_subtitle(_("Select / deselect all targets at once"))
-            machines_group.add(self._all_switch)
+            group.add(self._all_switch)
             self._all_switch.connect("notify::active", self._on_all_switch_changed)
             self._local_switch.connect("notify::active", self._on_individual_switch_changed)
             for _mid, row in self._machine_switches:
@@ -136,11 +151,11 @@ class _CommandDialog:
             self._all_switch = None
             hint = Adw.ActionRow(title=_("No remote machines configured"))
             hint.set_subtitle(_("Add machines via menu → Manage Machines"))
-            machines_group.add(hint)
+            group.add(hint)
+        return group
 
-        # ── Appearance ───────────────────────────────────────────────────
-        appearance_group = Adw.PreferencesGroup(title=_("Appearance"))
-        box.append(appearance_group)
+    def _build_appearance_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Appearance"))
 
         icon_row = Adw.ActionRow(title=_("Icon"))
         icon_row.set_subtitle(_("Click Browse to pick visually, or type a name"))
@@ -148,53 +163,46 @@ class _CommandDialog:
             icon_name=_FALLBACK_ICON, pixel_size=24, valign=Gtk.Align.CENTER
         )
         icon_row.add_prefix(self._icon_preview)
-
         self._icon_entry = Gtk.Entry(
-            valign=Gtk.Align.CENTER,
-            hexpand=True,
-            placeholder_text=_FALLBACK_ICON,
-            width_chars=24,
+            valign=Gtk.Align.CENTER, hexpand=True,
+            placeholder_text=_FALLBACK_ICON, width_chars=24,
         )
         self._icon_entry.connect("changed", self._on_icon_changed)
         icon_row.add_suffix(self._icon_entry)
-
         browse_btn = Gtk.Button(label=_("Browse"), valign=Gtk.Align.CENTER)
         browse_btn.add_css_class("flat")
         browse_btn.connect("clicked", self._on_browse_icon)
         icon_row.add_suffix(browse_btn)
-        appearance_group.add(icon_row)
+        group.add(icon_row)
 
         bg_row, self._bg_color_entry = self._build_color_row(_("Background color"))
-        appearance_group.add(bg_row)
-
+        group.add(bg_row)
         text_row, self._text_color_entry = self._build_color_row(_("Text color"))
-        appearance_group.add(text_row)
+        group.add(text_row)
 
         self._hide_label_row = Adw.SwitchRow(title=_("Hide label"))
         self._hide_label_row.set_subtitle(_("Show icon only — no text below"))
-        appearance_group.add(self._hide_label_row)
-
+        group.add(self._hide_label_row)
         self._hide_icon_row = Adw.SwitchRow(title=_("Hide icon"))
         self._hide_icon_row.set_subtitle(_("Show label only — no icon above"))
-        appearance_group.add(self._hide_icon_row)
+        group.add(self._hide_icon_row)
+        return group
 
-        # ── Organisation ─────────────────────────────────────────────────
-        org_group = Adw.PreferencesGroup(title=_("Organisation"))
-        box.append(org_group)
-
+    def _build_organisation_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Organisation"))
         self._category_row = Adw.EntryRow(title=_("Category"))
-        org_group.add(self._category_row)
+        group.add(self._category_row)
+        return group
 
-        # ── Behaviour ────────────────────────────────────────────────────
-        behaviour_group = Adw.PreferencesGroup(title=_("Behaviour"))
-        box.append(behaviour_group)
+    def _build_behaviour_group(self) -> Adw.PreferencesGroup:
+        group = Adw.PreferencesGroup(title=_("Behaviour"))
 
         self._tooltip_row = Adw.EntryRow(title=_("Tooltip"))
         self._tooltip_row.set_tooltip_text(
             _("Text shown when hovering over the button.\n"
               "Leave empty to show the command automatically.")
         )
-        behaviour_group.add(self._tooltip_row)
+        group.add(self._tooltip_row)
 
         self._confirm_row = Adw.SwitchRow(title=_("Confirm before running"))
         self._confirm_row.set_subtitle(_("Show a confirmation popup before executing"))
@@ -202,29 +210,21 @@ class _CommandDialog:
             _("When enabled, a popup asks 'Run this command?' before anything happens.\n"
               "Recommended for destructive operations like reboots or file deletions.")
         )
-        behaviour_group.add(self._confirm_row)
+        group.add(self._confirm_row)
 
         exec_mode_model = Gtk.StringList()
         self._exec_mode_values = ["silent", "output", "terminal"]
-        exec_mode_labels = [
-            _("Silent (toast only)"),
-            _("Show output"),
-            _("Open in terminal"),
-        ]
-        for label in exec_mode_labels:
+        for label in [_("Silent (toast only)"), _("Show output"), _("Open in terminal")]:
             exec_mode_model.append(label)
-
         self._exec_mode_row = Adw.ComboRow(title=_("Execution mode"))
-        self._exec_mode_row.set_subtitle(
-            _("How to display results after the command runs")
-        )
+        self._exec_mode_row.set_subtitle(_("How to display results after the command runs"))
         self._exec_mode_row.set_tooltip_text(
             _("Silent: only a brief toast notification\n"
               "Show output: open a window with stdout/stderr\n"
               "Open in terminal: run in a new terminal window (supports sudo, interactive commands)")
         )
         self._exec_mode_row.set_model(exec_mode_model)
-        behaviour_group.add(self._exec_mode_row)
+        group.add(self._exec_mode_row)
 
         self._run_as_user_row = Adw.EntryRow(title=_("Run as user"))
         self._run_as_user_row.set_tooltip_text(
@@ -232,11 +232,8 @@ class _CommandDialog:
               "on the remote machine via sudo -u (e.g. deploy-user).\n"
               "Leave empty to run as the SSH user.")
         )
-        behaviour_group.add(self._run_as_user_row)
-
-        scroll.set_child(box)
-        toolbar_view.set_content(scroll)
-        self.dialog.set_content(toolbar_view)
+        group.add(self._run_as_user_row)
+        return group
 
     def _populate_fields(self):
         if not self._button:
@@ -312,7 +309,8 @@ class _CommandDialog:
         row.add_suffix(clear_btn)
 
         def update_swatch(color: str):
-            if color and color.startswith("#"):
+            rgba = Gdk.RGBA()
+            if color and color.startswith("#") and rgba.parse(color):
                 css = (f"button {{ background: {color}; min-width: 32px;"
                        f" min-height: 32px; padding: 0; border-radius: 4px; }}")
             else:
@@ -407,13 +405,11 @@ class _CommandDialog:
     def _on_all_switch_changed(self, switch, _param):
         """When 'All machines' is toggled, set all individual switches to match."""
         active = switch.get_active()
-        self._local_switch.handler_block_by_func(self._on_individual_switch_changed)
-        self._local_switch.set_active(active)
-        self._local_switch.handler_unblock_by_func(self._on_individual_switch_changed)
+        with _block_handler(self._local_switch, self._on_individual_switch_changed):
+            self._local_switch.set_active(active)
         for _, row in self._machine_switches:
-            row.handler_block_by_func(self._on_individual_switch_changed)
-            row.set_active(active)
-            row.handler_unblock_by_func(self._on_individual_switch_changed)
+            with _block_handler(row, self._on_individual_switch_changed):
+                row.set_active(active)
 
     def _on_individual_switch_changed(self, switch, _param):
         """Update 'All machines' state when any individual switch changes."""
@@ -421,9 +417,8 @@ class _CommandDialog:
             return
         all_rows = [self._local_switch] + [r for _, r in self._machine_switches]
         all_on = all(r.get_active() for r in all_rows)
-        self._all_switch.handler_block_by_func(self._on_all_switch_changed)
-        self._all_switch.set_active(all_on)
-        self._all_switch.handler_unblock_by_func(self._on_all_switch_changed)
+        with _block_handler(self._all_switch, self._on_all_switch_changed):
+            self._all_switch.set_active(all_on)
 
     def _on_icon_changed(self, entry):
         icon_name = entry.get_text().strip() or _FALLBACK_ICON

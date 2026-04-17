@@ -65,46 +65,24 @@ class CommandExecutor:
                     None = derive from button: first remote UUID, or local if none.
                     ""   = explicit local execution.
         """
-        # Terminal mode: local terminal, or auto-SSH when a machine is targeted.
-        if button.execution_mode == "terminal":
-            if machine_id is None:
-                non_local = [mid for mid in button.machine_ids if mid]
-                resolved_id = non_local[0] if non_local else ""
-            else:
-                resolved_id = machine_id
+        resolved_id = self._resolve_machine_id(button, machine_id)
 
+        if button.execution_mode == "terminal":
             if resolved_id:
                 machine = self._find_machine(resolved_id)
                 if machine is None:
-                    callback(ExecutionResult(
-                        success=False, return_code=-1,
-                        stdout="", stderr=f"Machine '{resolved_id}' not found in config.",
-                        duration_ms=0, button_id=button.id,
-                    ))
+                    callback(self._machine_not_found(resolved_id, button.id))
                     return
-                terminal_cmd = self._build_ssh_command(
-                    machine, button.command, button.run_as_user
-                )
+                terminal_cmd = self._build_ssh_command(machine, button.command, button.run_as_user)
             else:
                 terminal_cmd = button.command
-
             run_in_thread(self._run_in_terminal, callback, terminal_cmd, button.id)
             return
-
-        if machine_id is None:
-            non_local = [mid for mid in button.machine_ids if mid]
-            resolved_id = non_local[0] if non_local else ""
-        else:
-            resolved_id = machine_id
 
         if resolved_id:
             machine = self._find_machine(resolved_id)
             if machine is None:
-                callback(ExecutionResult(
-                    success=False, return_code=-1,
-                    stdout="", stderr=f"Machine '{resolved_id}' not found in config.",
-                    duration_ms=0, button_id=button.id,
-                ))
+                callback(self._machine_not_found(resolved_id, button.id))
                 return
             run_in_thread(self._run_remote, callback, button.command, machine, button.id)
         else:
@@ -199,6 +177,19 @@ class CommandExecutor:
 
     def _run_remote(self, command: str, machine: Machine, button_id: str = "") -> ExecutionResult:
         return self._get_ssh().run_command(machine, command, button_id)
+
+    def _resolve_machine_id(self, button: CommandButton, override: str | None) -> str:
+        if override is not None:
+            return override
+        non_local = [mid for mid in button.machine_ids if mid]
+        return non_local[0] if non_local else ""
+
+    def _machine_not_found(self, machine_id: str, button_id: str) -> ExecutionResult:
+        return ExecutionResult(
+            success=False, return_code=-1,
+            stdout="", stderr=f"Machine '{machine_id}' not found in config.",
+            duration_ms=0, button_id=button_id,
+        )
 
     def _find_machine(self, machine_id: str) -> Machine | None:
         return next((m for m in self._config.load_machines() if m.id == machine_id), None)

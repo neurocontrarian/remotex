@@ -32,7 +32,7 @@
 3. Collez votre clé de licence dans le champ
 4. Cliquez sur **Activer Pro**
 
-Votre clé est validée et stockée localement dans `~/.config/remotex/license.key`. Une connexion internet est nécessaire pour l'activation initiale.
+Une connexion internet est nécessaire pour l'activation initiale.
 
 ## Licence annuelle — renouvellement
 

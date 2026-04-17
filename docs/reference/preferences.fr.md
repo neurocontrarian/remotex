@@ -45,7 +45,7 @@ Une valeur de 4 (la valeur par défaut) fonctionne bien pour des boutons de tail
 
 ### Confirmer avant d'exécuter par défaut
 
-Lorsque cette option est activée, la case **Confirmer avant d'exécuter** dans l'éditeur de bouton est pré-cochée pour chaque nouveau bouton créé. Vous pouvez toujours la remplacer par bouton.
+Lorsque cette option est activée, la case **Confirmer avant d'exécuter** dans l'éditeur de bouton est pré-cochée pour chaque nouveau bouton créé.
 
 N'affecte pas les boutons existants.
 
@@ -84,7 +84,11 @@ Applique un style visuel à toutes les tuiles de boutons. Consultez [Thèmes](..
 
 ### Toujours au premier plan
 
-Lorsque cette option est activée, la fenêtre RemoteX flotte au-dessus de toutes les autres fenêtres. Implémenté via `wmctrl` — nécessite que `wmctrl` soit installé sur votre système.
+Lorsque cette option est activée, la fenêtre RemoteX flotte au-dessus de toutes les autres fenêtres. Implémenté via `wmctrl` — optionnel, mais nécessaire pour cette fonctionnalité. Installez-le si besoin :
+
+```bash
+sudo apt install wmctrl
+```
 
 Ce paramètre est également accessible depuis le menu hamburger comme raccourci.
 

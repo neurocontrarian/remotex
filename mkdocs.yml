@@ -66,6 +66,9 @@ nav:
   - AI Integration (MCP): mcp.md
   - RemoteX Pro: pro.md
 
+markdown_extensions:
+  - attr_list
+
 extra:
   social:
     - icon: fontawesome/brands/github

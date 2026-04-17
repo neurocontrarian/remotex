@@ -45,7 +45,7 @@ A value of 4 (the default) works well for medium-sized buttons on a typical 1080
 
 ### Confirm before running by default
 
-When enabled, the **Confirm before running** toggle in the Button Editor is pre-checked for every new button you create. You can still override it per button.
+When enabled, the **Confirm before running** toggle in the Button Editor is pre-checked for every new button you create.
 
 Does not affect existing buttons.
 
@@ -84,7 +84,11 @@ Applies a visual style to all button tiles. See [Themes](../pro/themes.md) for a
 
 ### Always on top
 
-When enabled, the RemoteX window floats above all other windows. Implemented via `wmctrl` — requires `wmctrl` to be installed on your system.
+When enabled, the RemoteX window floats above all other windows. Implemented via `wmctrl` — optional, but required for this feature. Install it if needed:
+
+```bash
+sudo apt install wmctrl
+```
 
 This setting is also accessible from the hamburger menu as a quick toggle.
 

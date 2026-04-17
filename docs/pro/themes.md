@@ -33,7 +33,9 @@ Terminal-inspired monochrome style with a scanline texture. Forces a dark backgr
 
 ## Screenshots
 
-![Neon theme](../assets/theme-neon.png){ width=49% } ![Retro theme](../assets/theme-retro.png){ width=49% }
+![Bold theme](../assets/theme-bold.png){ width=49% } ![Neon theme](../assets/theme-neon.png){ width=49% }
+
+![Retro theme](../assets/theme-retro.png){ width=49% }
 
 ---
 

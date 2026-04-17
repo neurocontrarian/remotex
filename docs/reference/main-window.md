@@ -103,8 +103,8 @@ The tile background and label color can be customised per button.
 
 After a command runs, a small toast notification slides up from the bottom of the window:
 
-- **Green toast** — command succeeded
-- **Red toast** — command failed (exit code non-zero)
+- **Success toast** — command completed successfully
+- **Failure toast** — command failed (exit code non-zero)
 
 For commands with **Show output** mode, or for any command that fails, an output dialog opens automatically with the full `stdout` and `stderr`.
 

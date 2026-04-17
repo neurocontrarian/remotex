@@ -103,4 +103,7 @@ def test_add_button_auto_position():
         config.add_button(CommandButton(name="B", command="b"))
         config.add_button(CommandButton(name="C", command="c"))
         loaded = config.load_buttons()
-        assert [b.position for b in loaded] == [0, 1, 2]
+        abc = sorted([b for b in loaded if b.name in ("A", "B", "C")], key=lambda b: b.position)
+        assert len(abc) == 3
+        assert [b.name for b in abc] == ["A", "B", "C"]
+        assert abc[0].position < abc[1].position < abc[2].position

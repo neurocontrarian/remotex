@@ -1,6 +1,7 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+from dataclasses import dataclass, field
 from gi.repository import Gtk, Adw, Gio, Gdk, GObject, GLib
 
 from models.config import ConfigManager
@@ -14,6 +15,19 @@ from dialogs.command_dialog import show_command_dialog
 from dialogs.machine_picker_dialog import show_machine_picker
 from pro.license import is_pro_active, FREE_BUTTON_LIMIT, PRO_INFO_URL, PRO_BUY_URL
 from i18n import _
+
+
+@dataclass
+class _MultiSelectState:
+    mode: bool = False
+    selected_ids: set = field(default_factory=set)
+    rb_active: bool = False
+    rb_start: tuple = (0.0, 0.0)
+    rb_current: tuple = (0.0, 0.0)
+    rb_da: object = None
+    button: object = None
+    action_bar_revealer: object = None
+    count_label: object = None
 
 
 @Gtk.Template(resource_path='/com/github/remotex/RemoteX/ui/window.ui')
@@ -43,16 +57,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         self._updating_cats = False
         self._tiles: dict[str, ButtonTile] = {}
         self._custom_css_provider = None
-        # ── Multi-select state ───────────────────────────────────────────
-        self._select_mode = False
-        self._selected_ids: set[str] = set()
-        self._rb_active = False
-        self._rb_start_fb = (0.0, 0.0)
-        self._rb_current_fb = (0.0, 0.0)
-        self._rb_da = None
-        self._select_button = None
-        self._action_bar_revealer = None
-        self._select_count_label = None
+        self._ms = _MultiSelectState()
         self._settings = self._load_settings()
         self._category_revealer = self._build_category_revealer()
         self.toolbar_view.add_top_bar(self._category_revealer)
@@ -416,12 +421,12 @@ class RemotexWindow(Adw.ApplicationWindow):
         self.flow_box.set_filter_func(self._filter_func)
 
         # Restore visual selection for tiles that still exist
-        self._selected_ids = {bid for bid in self._selected_ids if bid in self._tiles}
-        for bid in self._selected_ids:
+        self._ms.selected_ids = {bid for bid in self._ms.selected_ids if bid in self._tiles}
+        for bid in self._ms.selected_ids:
             self._tiles[bid].set_selected(True)
-        if hasattr(self, '_action_bar_revealer') and self._action_bar_revealer:
-            self._action_bar_revealer.set_reveal_child(
-                self._select_mode and bool(self._selected_ids)
+        if self._ms.action_bar_revealer:
+            self._ms.action_bar_revealer.set_reveal_child(
+                self._ms.mode and bool(self._ms.selected_ids)
             )
 
     # ── Tile controllers (right-click + drag-and-drop) ───────────────────
@@ -471,7 +476,18 @@ class RemotexWindow(Adw.ApplicationWindow):
             lbl = Gtk.Label(label=label_text, xalign=0, hexpand=True)
             if destructive:
                 lbl.add_css_class("error")
-            inner.append(Gtk.Image(icon_name="changes-prevent-symbolic" if locked else icon_name))
+            effective = "changes-prevent-symbolic" if locked else icon_name
+            _BOOTSTRAP_FALLBACK = {"document-edit-symbolic": "pencil"}
+            if effective in _BOOTSTRAP_FALLBACK:
+                try:
+                    from utils.icon_loader import load_icon_texture
+                    tex = load_icon_texture(_BOOTSTRAP_FALLBACK[effective], 16)
+                    img = Gtk.Image.new_from_paintable(tex) if tex else Gtk.Image(icon_name=effective)
+                except Exception:
+                    img = Gtk.Image(icon_name=effective)
+            else:
+                img = Gtk.Image(icon_name=effective)
+            inner.append(img)
             inner.append(lbl)
             if locked:
                 badge = Gtk.Label(label=_("Pro"))
@@ -589,7 +605,7 @@ class RemotexWindow(Adw.ApplicationWindow):
     # ── Drag-and-drop reordering ─────────────────────────────────────────
 
     def _on_drag_prepare(self, source, x, y, tile: ButtonTile):
-        if self._select_mode:
+        if self._ms.mode:
             return None
         return Gdk.ContentProvider.new_for_value(tile.command_button.id)
 
@@ -644,7 +660,7 @@ class RemotexWindow(Adw.ApplicationWindow):
     # ── Button execution ─────────────────────────────────────────────────
 
     def _on_tile_clicked(self, tile: ButtonTile):
-        if self._select_mode:
+        if self._ms.mode:
             return  # handled by capture gesture
         button = tile.command_button
         if button.confirm_before_run:
@@ -701,11 +717,15 @@ class RemotexWindow(Adw.ApplicationWindow):
                 m = next((m for m in all_machines if m.id == machine_id), None)
                 label = f"{button.name} — {m.name}" if m else button.name
 
-            def on_done(result, lbl=label):
+            def on_done(result, lbl=label, btn_id=button.id):
                 pending["count"] -= 1
                 if pending["count"] == 0:
-                    tile.set_running(False)
-                    tile.flash_result(result.success)
+                    current = self._tiles.get(btn_id)
+                    if current is tile:
+                        tile.set_running(False)
+                        tile.flash_result(result.success)
+                    elif current is not None:
+                        current.set_running(False)
                 mode = button.execution_mode
                 show_output = (
                     mode == "output"
@@ -731,8 +751,12 @@ class RemotexWindow(Adw.ApplicationWindow):
         )
 
     def _on_execution_done(self, tile: ButtonTile, button: CommandButton, result: ExecutionResult):
-        tile.set_running(False)
-        tile.flash_result(result.success)
+        current = self._tiles.get(button.id)
+        if current is tile:
+            tile.set_running(False)
+            tile.flash_result(result.success)
+        elif current is not None:
+            current.set_running(False)
 
         mode = button.execution_mode
         if mode == "terminal":
@@ -806,7 +830,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         btn.set_tooltip_text(_("Select multiple buttons"))
         btn.connect("toggled", self._on_select_button_toggled)
         self.header_bar.pack_end(btn)
-        self._select_button = btn
+        self._ms.button = btn
 
     def _build_action_bar(self):
         revealer = Gtk.Revealer(
@@ -815,9 +839,9 @@ class RemotexWindow(Adw.ApplicationWindow):
         )
         action_bar = Gtk.ActionBar()
 
-        self._select_count_label = Gtk.Label()
-        self._select_count_label.add_css_class("caption")
-        action_bar.pack_start(self._select_count_label)
+        self._ms.count_label = Gtk.Label()
+        self._ms.count_label.add_css_class("caption")
+        action_bar.pack_start(self._ms.count_label)
 
         del_btn = Gtk.Button(label=_("Delete"))
         del_btn.add_css_class("destructive-action")
@@ -834,7 +858,7 @@ class RemotexWindow(Adw.ApplicationWindow):
 
         revealer.set_child(action_bar)
         self.toolbar_view.add_bottom_bar(revealer)
-        self._action_bar_revealer = revealer
+        self._ms.action_bar_revealer = revealer
 
     def _build_rubber_band_overlay(self):
         da = Gtk.DrawingArea()
@@ -843,7 +867,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         da.set_vexpand(True)
         da.set_draw_func(self._draw_rubber_band)
         self.grid_overlay.add_overlay(da)
-        self._rb_da = da
+        self._ms.rb_da = da
 
     def _setup_selection_gestures(self):
         # CAPTURE click: toggles tile selection in select mode (prevents tile execution)
@@ -861,7 +885,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         self.grid_overlay.add_controller(drag)
 
     def _on_select_key_pressed(self, ctrl, keyval, keycode, state):
-        if keyval == Gdk.KEY_Escape and self._select_mode:
+        if keyval == Gdk.KEY_Escape and self._ms.mode:
             self._exit_select_mode()
             return True
         return False
@@ -873,42 +897,42 @@ class RemotexWindow(Adw.ApplicationWindow):
             self._exit_select_mode()
 
     def _enter_select_mode(self):
-        if self._select_mode:
+        if self._ms.mode:
             return
-        self._select_mode = True
-        if self._select_button:
-            self._select_button.set_active(True)
-        if self._action_bar_revealer:
-            self._action_bar_revealer.set_reveal_child(True)
+        self._ms.mode = True
+        if self._ms.button:
+            self._ms.button.set_active(True)
+        if self._ms.action_bar_revealer:
+            self._ms.action_bar_revealer.set_reveal_child(True)
         self._on_selection_changed()
 
     def _exit_select_mode(self):
-        if not self._select_mode:
+        if not self._ms.mode:
             return
-        self._select_mode = False
+        self._ms.mode = False
         for tile in self._tiles.values():
             tile.set_selected(False)
-        self._selected_ids.clear()
-        if self._select_button:
-            self._select_button.set_active(False)
-        if self._action_bar_revealer:
-            self._action_bar_revealer.set_reveal_child(False)
+        self._ms.selected_ids.clear()
+        if self._ms.button:
+            self._ms.button.set_active(False)
+        if self._ms.action_bar_revealer:
+            self._ms.action_bar_revealer.set_reveal_child(False)
 
     def _toggle_tile_selection(self, btn_id: str):
-        if btn_id in self._selected_ids:
-            self._selected_ids.discard(btn_id)
+        if btn_id in self._ms.selected_ids:
+            self._ms.selected_ids.discard(btn_id)
             if tile := self._tiles.get(btn_id):
                 tile.set_selected(False)
         else:
-            self._selected_ids.add(btn_id)
+            self._ms.selected_ids.add(btn_id)
             if tile := self._tiles.get(btn_id):
                 tile.set_selected(True)
         self._on_selection_changed()
 
     def _on_selection_changed(self):
-        n = len(self._selected_ids)
-        if self._select_count_label:
-            self._select_count_label.set_text(
+        n = len(self._ms.selected_ids)
+        if self._ms.count_label:
+            self._ms.count_label.set_text(
                 _("{n} selected").format(n=n) if n else _("No selection")
             )
 
@@ -921,7 +945,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         return None
 
     def _on_fb_pressed(self, gesture, n_press, x, y):
-        if not self._select_mode:
+        if not self._ms.mode:
             return
         picked = self.flow_box.pick(x, y, Gtk.PickFlags.DEFAULT)
         tile = self._find_tile_ancestor(picked)
@@ -930,7 +954,7 @@ class RemotexWindow(Adw.ApplicationWindow):
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def _on_rb_drag_begin(self, gesture, start_x, start_y):
-        if not self._select_mode:
+        if not self._ms.mode:
             gesture.set_state(Gtk.EventSequenceState.DENIED)
             return
         # Coords are in grid_overlay space — pick directly from there
@@ -938,29 +962,29 @@ class RemotexWindow(Adw.ApplicationWindow):
         if self._find_tile_ancestor(picked) is not None:
             gesture.set_state(Gtk.EventSequenceState.DENIED)
             return
-        self._rb_active = True
-        self._rb_start_fb = (start_x, start_y)
-        self._rb_current_fb = (start_x, start_y)
+        self._ms.rb_active = True
+        self._ms.rb_start = (start_x, start_y)
+        self._ms.rb_current = (start_x, start_y)
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def _on_rb_drag_update(self, gesture, offset_x, offset_y):
-        if not self._rb_active:
+        if not self._ms.rb_active:
             return
-        sx, sy = self._rb_start_fb
-        self._rb_current_fb = (sx + offset_x, sy + offset_y)
+        sx, sy = self._ms.rb_start
+        self._ms.rb_current = (sx + offset_x, sy + offset_y)
         self._update_rb_selection()
-        if self._rb_da:
-            self._rb_da.queue_draw()
+        if self._ms.rb_da:
+            self._ms.rb_da.queue_draw()
 
     def _on_rb_drag_end(self, gesture, offset_x, offset_y):
-        if self._rb_active:
-            self._rb_active = False
-            if self._rb_da:
-                self._rb_da.queue_draw()
+        if self._ms.rb_active:
+            self._ms.rb_active = False
+            if self._ms.rb_da:
+                self._ms.rb_da.queue_draw()
 
     def _update_rb_selection(self):
-        x1, y1 = self._rb_start_fb
-        x2, y2 = self._rb_current_fb
+        x1, y1 = self._ms.rb_start
+        x2, y2 = self._ms.rb_current
         rx = min(x1, x2); ry = min(y1, y2)
         rw = abs(x2 - x1); rh = abs(y2 - y1)
         if rw < 5 and rh < 5:
@@ -976,17 +1000,17 @@ class RemotexWindow(Adw.ApplicationWindow):
             tx, ty = tile_pos.x, tile_pos.y
             tw, th = tile.get_width(), tile.get_height()
             overlaps = tx < rx + rw and tx + tw > rx and ty < ry + rh and ty + th > ry
-            if overlaps and btn_id not in self._selected_ids:
-                self._selected_ids.add(btn_id)
+            if overlaps and btn_id not in self._ms.selected_ids:
+                self._ms.selected_ids.add(btn_id)
                 tile.set_selected(True)
         self._on_selection_changed()
 
     def _draw_rubber_band(self, da, cr, width, height):
-        if not self._rb_active:
+        if not self._ms.rb_active:
             return
         # Coords are already in grid_overlay space (same as DrawingArea overlay)
-        x1, y1 = self._rb_start_fb
-        x2, y2 = self._rb_current_fb
+        x1, y1 = self._ms.rb_start
+        x2, y2 = self._ms.rb_current
         rx = min(x1, x2); ry = min(y1, y2)
         rw = abs(x2 - x1); rh = abs(y2 - y1)
 
@@ -1001,9 +1025,9 @@ class RemotexWindow(Adw.ApplicationWindow):
     # ── Group actions ─────────────────────────────────────────────────────
 
     def _on_select_delete(self, btn):
-        if not self._selected_ids:
+        if not self._ms.selected_ids:
             return
-        n = len(self._selected_ids)
+        n = len(self._ms.selected_ids)
         dlg = Adw.AlertDialog(
             heading=_("Delete {n} buttons?").format(n=n),
             body=_("These buttons will be permanently removed."),
@@ -1016,7 +1040,7 @@ class RemotexWindow(Adw.ApplicationWindow):
 
         def on_response(d, response):
             if response == "delete":
-                ids = set(self._selected_ids)
+                ids = set(self._ms.selected_ids)
                 self._exit_select_mode()
                 buttons = self._config.load_buttons()
                 self._config.save_buttons([b for b in buttons if b.id not in ids])
@@ -1027,7 +1051,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         dlg.present(self)
 
     def _on_select_change_category(self, btn):
-        if not self._selected_ids:
+        if not self._ms.selected_ids:
             return
         all_buttons = self._config.load_buttons()
         categories = sorted({b.category for b in all_buttons if b.category})
@@ -1063,7 +1087,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         def on_response(d, response):
             if response == "apply":
                 cat = entry.get_text().strip()
-                ids = set(self._selected_ids)
+                ids = set(self._ms.selected_ids)
                 self._exit_select_mode()
                 buttons = self._config.load_buttons()
                 for b in buttons:
@@ -1076,7 +1100,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         dlg.present(self)
 
     def _on_select_change_machine(self, btn):
-        if not self._selected_ids:
+        if not self._ms.selected_ids:
             return
         machines = self._config.load_machines()
         if not machines:
@@ -1107,7 +1131,7 @@ class RemotexWindow(Adw.ApplicationWindow):
             if response == "apply":
                 idx = combo.get_selected()
                 machine_ids = [] if idx == 0 else [machines[idx - 1].id]
-                ids = set(self._selected_ids)
+                ids = set(self._ms.selected_ids)
                 self._exit_select_mode()
                 buttons = self._config.load_buttons()
                 for b in buttons:
