@@ -175,7 +175,7 @@ Pick your tool below. The setup is done once; after that it works automatically.
     Description=mcpo proxy for RemoteX MCP server
 
     [Service]
-    ExecStart=%h/.local/bin/mcpo --port 8000 -- python3 %h/remotex/src/mcp_server.py
+    ExecStart=%h/.local/bin/mcpo --port 8000 -- %h/remotex/.venv/bin/python3 %h/remotex/src/mcp_server.py
     Restart=on-failure
     RestartSec=5
 
