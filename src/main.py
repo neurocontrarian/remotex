@@ -4,7 +4,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
 
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.3.3"
 
 
 def _suppress_svg_icon_warnings(log_domain, log_level, message, user_data):
