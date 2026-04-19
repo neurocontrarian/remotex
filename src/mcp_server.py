@@ -80,6 +80,14 @@ TOOLS = [
                 "confirm_before_run": {"type": "boolean", "description": "Ask for confirmation before running"},
                 "icon_name":          {"type": "string",  "description": "Icon name (optional)"},
                 "color":              {"type": "string",  "description": "Background color as hex (#3584e4, optional)"},
+                "text_color":         {"type": "string",  "description": "Label text color as hex (#ffffff, optional)"},
+                "hide_label":         {"type": "boolean", "description": "Icon-only mode — hide the button text label"},
+                "hide_icon":          {"type": "boolean", "description": "Text-only mode — hide the button icon"},
+                "machine_ids":        {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Machine UUIDs to run on. Empty list = local. Use list_machines to get UUIDs.",
+                },
             },
             "required": ["name", "command"],
             "additionalProperties": False,
@@ -87,19 +95,27 @@ TOOLS = [
     },
     {
         "name": "update_button",
-        "description": "Update an existing RemoteX button. Only fields provided are changed.",
+        "description": "Update an existing RemoteX button. Only fields provided are changed. Use get_button first to retrieve the current ID.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "id":                 {"type": "string",  "description": "Button UUID to update"},
-                "name":               {"type": "string"},
-                "command":            {"type": "string"},
-                "category":           {"type": "string"},
-                "tooltip":            {"type": "string"},
-                "show_output":        {"type": "boolean"},
-                "confirm_before_run": {"type": "boolean"},
-                "icon_name":          {"type": "string"},
-                "color":              {"type": "string"},
+                "id":                 {"type": "string",  "description": "Button UUID to update (required)"},
+                "name":               {"type": "string",  "description": "New button label"},
+                "command":            {"type": "string",  "description": "New shell command"},
+                "category":           {"type": "string",  "description": "New category name"},
+                "tooltip":            {"type": "string",  "description": "New hover tooltip"},
+                "show_output":        {"type": "boolean", "description": "Show output dialog after execution"},
+                "confirm_before_run": {"type": "boolean", "description": "Ask for confirmation before running"},
+                "icon_name":          {"type": "string",  "description": "New icon name"},
+                "color":              {"type": "string",  "description": "Background color as hex (#ff0000). Use empty string to remove color."},
+                "text_color":         {"type": "string",  "description": "Label text color as hex (#ffffff). Use empty string to reset to theme default."},
+                "hide_label":         {"type": "boolean", "description": "Icon-only mode — hide the button text label"},
+                "hide_icon":          {"type": "boolean", "description": "Text-only mode — hide the button icon"},
+                "machine_ids":        {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Machine UUIDs to run on. Empty list = local only. Use list_machines to get UUIDs.",
+                },
             },
             "required": ["id"],
             "additionalProperties": False,
@@ -204,6 +220,10 @@ def handle_create_button(args: dict) -> str:
         confirm_before_run= bool(args.get("confirm_before_run", False)),
         icon_name=          args.get("icon_name", "utilities-terminal-symbolic"),
         color=              args.get("color", ""),
+        text_color=         args.get("text_color", ""),
+        hide_label=         bool(args.get("hide_label", False)),
+        hide_icon=          bool(args.get("hide_icon", False)),
+        machine_ids=        args.get("machine_ids", []),
     )
     _config.add_button(btn)
     return json.dumps({"created": _button_to_dict(btn)}, ensure_ascii=False, indent=2)
@@ -217,12 +237,14 @@ def handle_update_button(args: dict) -> str:
     btn = next((b for b in buttons if b.id == bid), None)
     if btn is None:
         return f"Button not found: {bid}"
-    for field in ("name", "command", "category", "tooltip", "icon_name", "color"):
+    for field in ("name", "command", "category", "tooltip", "icon_name", "color", "text_color"):
         if field in args:
             setattr(btn, field, args[field])
-    for field in ("show_output", "confirm_before_run"):
+    for field in ("show_output", "confirm_before_run", "hide_label", "hide_icon"):
         if field in args:
             setattr(btn, field, bool(args[field]))
+    if "machine_ids" in args:
+        btn.machine_ids = args["machine_ids"]
     _config.update_button(btn)
     return json.dumps({"updated": _button_to_dict(btn)}, ensure_ascii=False, indent=2)
 

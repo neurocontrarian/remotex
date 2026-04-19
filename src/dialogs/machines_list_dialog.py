@@ -72,7 +72,22 @@ class _MachinesListDialog:
             return
 
         self._stack.set_visible_child_name("list")
-        for machine in machines:
+        # Sort: grouped machines first (by group name), then ungrouped
+        machines_sorted = sorted(machines, key=lambda m: (not m.group, m.group, m.name))
+        current_group = object()  # sentinel
+        for machine in machines_sorted:
+            if machine.group != current_group:
+                current_group = machine.group
+                if current_group:
+                    lbl = Gtk.Label(label=current_group, xalign=0,
+                                    margin_start=12, margin_top=8, margin_bottom=2)
+                    lbl.add_css_class("caption")
+                    lbl.add_css_class("dim-label")
+                    hdr = Gtk.ListBoxRow()
+                    hdr.set_selectable(False)
+                    hdr.set_activatable(False)
+                    hdr.set_child(lbl)
+                    self._list_box.append(hdr)
             row = self._make_row(machine)
             self._list_box.append(row)
 

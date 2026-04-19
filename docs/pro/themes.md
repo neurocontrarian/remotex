@@ -13,32 +13,32 @@ Button themes change the visual style of every tile in the grid. Select a theme 
 
 Solid colored tiles with strong contrast. This is the system default — tiles use the Adwaita card style with your per-button background color applied as a flat fill. Works well in both light and dark mode.
 
+![Bold theme](../assets/theme-bold.png)
+
 ### Cards
 
 Elevated card style with subtle drop shadows. Tiles look slightly raised above the grid background. A good choice if you prefer a layered, depth-based layout.
+
+![Cards theme](../assets/theme-cards.png)
 
 ### Phone
 
 Compact flat tiles with minimal padding, reminiscent of a phone dialer or calculator. Works best with small or medium button size and a higher column count.
 
+![Phone theme](../assets/theme-phone.png)
+
 ### Neon
 
 Dark background with glowing accent borders that pulse on hover. Per-button colors become the glow color. Designed for dark mode — looks best when your desktop is set to dark.
+
+!!! note
+    The Neon theme's glow effect is a hover animation — it is best appreciated at runtime. Move the mouse over a button to see the glowing border.
 
 ### Retro
 
 Terminal-inspired monochrome style with a scanline texture. Forces a dark background with green or amber text. Ignores per-button colors — all tiles look the same intentionally.
 
----
-
-## Screenshots
-
-![Bold theme](../assets/theme-bold.png){ width=49% } ![Cards theme](../assets/theme-cards.png){ width=49% }
-
-![Phone theme](../assets/theme-phone.png){ width=49% } ![Retro theme](../assets/theme-retro.png){ width=49% }
-
-!!! note
-    The **Neon** theme's glow effect is a hover animation — it is best appreciated at runtime. In the grid, tiles appear with a dark background and cyan text; the glowing border appears when you move the mouse over a button.
+![Retro theme](../assets/theme-retro.png)
 
 ---
 

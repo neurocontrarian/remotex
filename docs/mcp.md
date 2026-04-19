@@ -1,5 +1,8 @@
 # AI Integration (MCP)
 
+!!! warning "Experimental"
+    AI integration is experimental. Tool support and behaviour vary across models and clients. Results are not guaranteed — always review what the AI creates or modifies.
+
 RemoteX includes an MCP (Model Context Protocol) server. Once configured, your AI assistant can read and manage your buttons directly — no copy-pasting, no explaining your setup.
 
 > *"Add a button called 'Restart Nginx' that runs `sudo systemctl restart nginx` in the Server category"*
@@ -97,12 +100,54 @@ Pick your tool below. The setup is done once; after that it works automatically.
 
     MCP tools are only available in **Agent mode**.
 
-=== "Open WebUI"
+=== "Open WebUI (llama.cpp / Ollama)"
 
-    !!! note
-        Open WebUI only supports **HTTP-based** MCP servers, not the stdio transport used by RemoteX. Direct connection is not supported.
+    Open WebUI connects to tools via HTTP, not stdio. Use [mcpo](https://github.com/open-webui/mcpo) (the official Open WebUI proxy) to bridge RemoteX.
 
-        As a workaround, you can use [mcpo](https://github.com/open-webui/mcpo) to proxy the RemoteX MCP server over HTTP, but this is an advanced setup.
+    **Step 1 — Install mcpo (once):**
+
+    ```bash
+    pip install mcpo
+    # if pip is blocked by your OS (externally-managed-environment):
+    pipx install mcpo
+    ```
+
+    **Step 2 — Find your machine's local IP (if Open WebUI is on another machine):**
+
+    ```bash
+    hostname -I | awk '{print $1}'
+    ```
+
+    Note this IP — you'll need it in Step 4.
+
+    **Step 3 — Start the proxy (keep this terminal open):**
+
+    ```bash
+    mcpo --port 8000 -- python3 /path/to/remotex/src/mcp_server.py
+    ```
+
+    You should see: `Uvicorn running on http://0.0.0.0:8000`
+
+    **Step 4 — Add the tool server in Open WebUI:**
+
+    Go to **Admin Panel → Integrations → Manage tool servers → `+`** and fill in:
+
+    | Field | Value |
+    |-------|-------|
+    | Type | **OpenAPI** |
+    | Name | `remotex` |
+    | URL | `http://<your-ip>:8000` |
+    | Auth | None |
+
+    !!! warning "Use your machine's IP, not localhost"
+        If Open WebUI runs on a different machine (e.g. a server), `localhost` would point to that server — not to your Linux Mint machine where mcpo is running. Use the IP from Step 2 instead.
+
+    **Step 5 — Enable the tool in a chat:**
+
+    Start a new chat, click the **`+`** (tools) icon near the input field, and enable **remotex**.
+
+    !!! tip
+        This works with any backend supported by Open WebUI — llama.cpp, Ollama, OpenAI-compatible APIs, etc. The tool layer is independent of the model. Tool-calling support varies by model — instruction-tuned models generally work best.
 
 Replace `/path/to/remotex` with your actual installation path — typically the folder where you cloned the repo.
 
@@ -114,17 +159,22 @@ Replace `/path/to/remotex` with your actual installation path — typically the 
 |------|-------------|
 | `list_buttons` | List all buttons, optionally filtered by category |
 | `get_button` | Get details of a button by name or ID |
-| `create_button` | Create a new button |
-| `update_button` | Modify fields on an existing button |
+| `create_button` | Create a new button (name, command, category, color, icon, appearance…) |
+| `update_button` | Modify any field on an existing button — call `get_button` first to get the ID |
 | `delete_button` | Delete a button |
 | `list_categories` | List all category names |
 | `list_machines` | List SSH machines (name, host, user — no private keys) |
+
+!!! tip "Tip for updating buttons"
+    If the AI says it cannot update a button, ask it to call `get_button` with the button name first to retrieve the ID, then call `update_button` with that ID.
 
 ---
 
 ## Security
 
 The MCP server uses **stdio transport** — it runs as a subprocess of your AI client, communicating only through stdin/stdout. No network port is opened. Only the process that launched the server can communicate with it.
+
+When using mcpo (Open WebUI), the HTTP port (8000) is opened on your machine. Make sure it is not exposed to untrusted networks.
 
 !!! warning
     When MCP access is enabled, your AI assistant can create, modify and delete buttons. Disable the toggle in Preferences when you don't need it.

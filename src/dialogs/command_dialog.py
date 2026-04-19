@@ -133,11 +133,31 @@ class _CommandDialog:
 
         self._machine_switches: list[tuple[str, Adw.SwitchRow]] = []
         machines = self._config.load_machines()
+
+        # Build group map first so we know which machines belong to a group
+        group_map: dict[str, set] = {}
+        grouped_ids: set[str] = set()
+        for m in machines:
+            if m.group:
+                group_map.setdefault(m.group, set()).add(m.id)
+                grouped_ids.add(m.id)
+
+        # Ungrouped machines appear as individual rows; grouped ones are hidden (controlled via group row)
         for m in machines:
             row = Adw.SwitchRow(title=m.name)
             row.set_subtitle(f"{m.user}@{m.host}:{m.port}")
-            group.add(row)
+            if m.id not in grouped_ids:
+                group.add(row)
             self._machine_switches.append((m.id, row))
+
+        # Group toggle rows — one per distinct group name
+        self._group_switches: list[tuple[set, Adw.SwitchRow]] = []
+        for gname, mids in sorted(group_map.items()):
+            row = Adw.SwitchRow(title=_("Group: {name}").format(name=gname))
+            row.set_subtitle(_("{n} machines").format(n=len(mids)))
+            group.add(row)
+            self._group_switches.append((mids, row))
+            row.connect("notify::active", self._on_group_switch_changed, mids)
 
         if machines:
             self._all_switch = Adw.SwitchRow(title=_("All machines"))
@@ -237,6 +257,14 @@ class _CommandDialog:
 
     def _populate_fields(self):
         if not self._button:
+            try:
+                from gi.repository import Gio
+                _s = Gio.Settings.new('com.github.remotex.RemoteX')
+                user_val = _s.get_user_value('confirm-before-run')
+                default = user_val.get_boolean() if user_val is not None else True
+                self._confirm_row.set_active(default)
+            except Exception:
+                self._confirm_row.set_active(True)
             return
         self._name_row.set_text(self._button.name)
         self._command_row.set_text(self._button.command)
@@ -411,6 +439,16 @@ class _CommandDialog:
             with _block_handler(row, self._on_individual_switch_changed):
                 row.set_active(active)
 
+    def _on_group_switch_changed(self, switch, _param, machine_ids: set):
+        """When a group toggle is flipped, update all machines in that group."""
+        active = switch.get_active()
+        for mid, row in self._machine_switches:
+            if mid in machine_ids:
+                with _block_handler(row, self._on_individual_switch_changed):
+                    row.set_active(active)
+        # Sync the All switch
+        self._on_individual_switch_changed(None, None)
+
     def _on_individual_switch_changed(self, switch, _param):
         """Update 'All machines' state when any individual switch changes."""
         if self._all_switch is None:
@@ -419,6 +457,13 @@ class _CommandDialog:
         all_on = all(r.get_active() for r in all_rows)
         with _block_handler(self._all_switch, self._on_all_switch_changed):
             self._all_switch.set_active(all_on)
+        # Keep group switches in sync
+        for mids, grow in self._group_switches:
+            group_on = all(
+                row.get_active() for mid, row in self._machine_switches if mid in mids
+            )
+            with _block_handler(grow, self._on_group_switch_changed):
+                grow.set_active(group_on)
 
     def _on_icon_changed(self, entry):
         icon_name = entry.get_text().strip() or _FALLBACK_ICON

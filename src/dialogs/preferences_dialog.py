@@ -1,3 +1,4 @@
+import json
 import shlex
 import sys
 from pathlib import Path
@@ -401,6 +402,174 @@ def show_preferences_dialog(parent, config=None):
         group.add(mcp_row)
         page.add(group)
 
+    def _add_mcp_setup_section():
+        mcp_server_path = str(Path(__file__).resolve().parent.parent / 'mcp_server.py')
+        _CLIENTS = [
+            {
+                "label": "Claude Desktop",
+                "config_path": Path.home() / '.config' / 'Claude' / 'claude_desktop_config.json',
+                "format": "json",
+                "instruction": _("Restart Claude Desktop after applying."),
+            },
+            {
+                "label": "Claude Code (CLI)",
+                "config_path": None,
+                "format": "command",
+                "instruction": _("Run this command once in a terminal. Verify with: claude mcp list"),
+            },
+            {
+                "label": "Cursor",
+                "config_path": Path.home() / '.cursor' / 'mcp_config.json',
+                "format": "json",
+                "instruction": _("Restart Cursor after applying."),
+            },
+            {
+                "label": "Windsurf",
+                "config_path": Path.home() / '.codeium' / 'windsurf' / 'mcp_config.json',
+                "format": "json",
+                "instruction": _("Restart Windsurf after applying."),
+            },
+            {
+                "label": "Continue.dev",
+                "config_path": None,
+                "format": "yaml",
+                "instruction": _("Add to .continue/config.yaml in your project (Agent mode only)."),
+            },
+            {
+                "label": "Open WebUI (llama.cpp / Ollama)",
+                "config_path": None,
+                "format": "openwebui",
+                "instruction": _("Run steps 1–2 in a terminal, then in Open WebUI: Admin Panel → Integrations → Manage tool servers → Type: OpenAPI."),
+            },
+        ]
+
+        def _snippet(client: dict) -> str:
+            if client["format"] == "json":
+                return json.dumps({
+                    "mcpServers": {"remotex": {"command": "python3", "args": [mcp_server_path]}}
+                }, indent=2)
+            if client["format"] == "command":
+                return f"claude mcp add remotex python3 {mcp_server_path}"
+            if client["format"] == "openwebui":
+                return (
+                    f"# 1. Install the proxy (once — use pipx if pip fails)\n"
+                    f"pip install mcpo\n\n"
+                    f"# 2. Find your local IP (if Open WebUI is on another machine)\n"
+                    f"hostname -I | awk '{{print $1}}'\n\n"
+                    f"# 3. Run this in a terminal (keep it running)\n"
+                    f"mcpo --port 8000 -- python3 {mcp_server_path}\n\n"
+                    f"# 4. In Open WebUI: Admin Panel → Integrations → Manage tool servers\n"
+                    f"#    Type: OpenAPI  |  URL: http://<your-ip>:8000\n"
+                    f"#    (use http://localhost:8000 if Open WebUI runs on this machine)"
+                )
+            # yaml
+            return (
+                f"mcpServers:\n"
+                f"  - name: remotex\n"
+                f"    command: python3\n"
+                f"    args:\n"
+                f"      - {mcp_server_path}"
+            )
+
+        group = Adw.PreferencesGroup(title=_("MCP Client Setup"))
+        group.set_description(
+            _("Connect your AI assistant to RemoteX. "
+              "Enable 'Allow MCP access' in Desktop Integration above first.")
+        )
+
+        client_model = Gtk.StringList()
+        for c in _CLIENTS:
+            client_model.append(c["label"])
+        client_row = Adw.ComboRow(title=_("AI Client"))
+        client_row.set_model(client_model)
+        group.add(client_row)
+
+        file_row = Adw.ActionRow(title=_("Config file"))
+        copy_btn = Gtk.Button(label=_("Copy"), valign=Gtk.Align.CENTER, tooltip_text=_("Copy snippet to clipboard"))
+        copy_btn.add_css_class("flat")
+        file_row.add_suffix(copy_btn)
+        group.add(file_row)
+
+        # Monospace snippet area
+        config_buf = Gtk.TextBuffer()
+        config_view = Gtk.TextView(
+            buffer=config_buf, editable=False, monospace=True,
+            wrap_mode=Gtk.WrapMode.NONE,
+            margin_top=8, margin_bottom=8, margin_start=8, margin_end=8,
+        )
+        snippet_scroll = Gtk.ScrolledWindow(
+            hexpand=True, min_content_height=110,
+            hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+            vscrollbar_policy=Gtk.PolicyType.NEVER,
+        )
+        snippet_scroll.set_child(config_view)
+        snippet_frame = Gtk.Frame(margin_start=12, margin_end=12, margin_bottom=4)
+        snippet_frame.set_child(snippet_scroll)
+        group.add(snippet_frame)
+
+        apply_row = Adw.ActionRow(title=_("Apply to config file"))
+        apply_row.set_activatable(True)
+        apply_row.add_suffix(Gtk.Image.new_from_icon_name("document-save-symbolic"))
+        group.add(apply_row)
+
+        _mcp_active = [False]
+
+        def _update(idx: int):
+            client = _CLIENTS[idx]
+            config_buf.set_text(_snippet(client))
+            cfg = client["config_path"]
+            if cfg:
+                file_row.set_title(_("Config file"))
+                file_row.set_subtitle(str(cfg))
+                file_row.set_visible(True)
+                apply_row.set_subtitle(client["instruction"])
+                apply_row.set_visible(True)
+            else:
+                title = _("Terminal command") if client["format"] == "command" else _("Project config")
+                file_row.set_title(title)
+                file_row.set_subtitle(client["instruction"])
+                file_row.set_visible(True)
+                apply_row.set_visible(False)
+
+        def _on_client_changed(row, _):
+            if _mcp_active[0]:
+                _update(row.get_selected())
+
+        def _on_copy(_btn):
+            idx = client_row.get_selected()
+            snippet = _snippet(_CLIENTS[idx])
+            parent.get_clipboard().set(snippet)
+            _show_toast(parent, _("Copied to clipboard"))
+
+        def _on_apply(_row):
+            idx = client_row.get_selected()
+            client = _CLIENTS[idx]
+            if not client["config_path"]:
+                return
+            try:
+                cfg_path = Path(client["config_path"])
+                cfg_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    existing = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
+                except Exception:
+                    existing = {}
+                existing.setdefault("mcpServers", {})["remotex"] = {
+                    "command": "python3",
+                    "args": [mcp_server_path],
+                }
+                cfg_path.write_text(json.dumps(existing, indent=2))
+                _show_toast(parent, _("Config written — restart {client}").format(
+                    client=client["label"]))
+            except Exception as e:
+                _show_toast(parent, _("Failed: {error}").format(error=e))
+
+        client_row.connect("notify::selected", _on_client_changed)
+        copy_btn.connect("clicked", _on_copy)
+        apply_row.connect("activated", _on_apply)
+        _add_timeout(300, lambda: _mcp_active.__setitem__(0, True) or False)
+        _update(0)
+        page.add(group)
+
     def _add_backup_section():
         if not is_pro_active() or not config:
             return
@@ -450,6 +619,7 @@ def show_preferences_dialog(parent, config=None):
     _add_categories_section()
     _add_icon_dirs_section()
     _add_desktop_section()
+    _add_mcp_setup_section()
     _add_backup_section()
 
     license_group = Adw.PreferencesGroup(title=_("License"))
@@ -457,7 +627,10 @@ def show_preferences_dialog(parent, config=None):
 
     def _on_license_changed():
         dialog.close()
-        GLib.idle_add(lambda: show_preferences_dialog(parent, config))
+        def _reopen():
+            show_preferences_dialog(parent, config)
+            return False
+        GLib.idle_add(_reopen)
 
     license_rows: list = []
     _build_license_section(license_group, license_rows, on_change=_on_license_changed, dialog=dialog)
@@ -572,12 +745,22 @@ def _build_license_section(group: Adw.PreferencesGroup, rows: list, on_change=No
 
     info = get_license_info()
 
-    def _do_deactivate(_):
-        clear_license_key()
-        if on_change:
-            on_change()
-        else:
-            _build_license_section(group, rows)
+    def _do_deactivate(row):
+        row.set_sensitive(False)
+        row.set_title(_("Deactivating…"))
+        def _run():
+            try:
+                clear_license_key()
+            except Exception:
+                pass
+        def _done(_):
+            if on_change:
+                on_change()
+            else:
+                _build_license_section(group, rows)
+            return False
+        from utils.threading import run_in_thread
+        run_in_thread(_run, _done)
 
     if info['active']:
         # ── Pro active ───────────────────────────────────────────────────
@@ -688,7 +871,7 @@ def _build_license_section(group: Adw.PreferencesGroup, rows: list, on_change=No
         activate_row.set_subtitle(_("Enter your license key and purchase email, then click Activate"))
         activate_row.set_activatable(True)
         activate_row.add_css_class("suggested-action")
-        activate_row.connect("activated", lambda _: _on_activate(key_entry, email_entry, group, rows, dialog, on_change))
+        activate_row.connect("activated", lambda _: _on_activate(key_entry, email_entry, group, rows, dialog, on_change, activate_row))
         rows.append(activate_row)
 
         buy_row = Adw.ActionRow(title=_("Get RemoteX Pro — $20/year or $40 lifetime"))
@@ -719,7 +902,8 @@ def _sched(dialog, delay_ms, callback):
 
 
 def _on_activate(key_entry: Adw.EntryRow, email_entry: Adw.EntryRow,
-                 group: Adw.PreferencesGroup, rows: list, dialog=None, on_change=None):
+                 group: Adw.PreferencesGroup, rows: list, dialog=None, on_change=None,
+                 activate_row=None):
     key = key_entry.get_text().strip()
     if not key:
         key_entry.add_css_class("error")
@@ -727,39 +911,60 @@ def _on_activate(key_entry: Adw.EntryRow, email_entry: Adw.EntryRow,
         return
 
     email = email_entry.get_text().strip()
-    valid, license_type, expires = validate_license_online(key, email)
-    if not valid:
-        if license_type == 'network_error':
-            key_entry.add_css_class("error")
-            orig_title = key_entry.get_title()
-            key_entry.set_title(_("Internet connection required for activation"))
-            def _reset(entry=key_entry, t=orig_title):
-                entry.remove_css_class("error")
-                entry.set_title(t)
-                return False
-            _sched(dialog, 3000, _reset)
-        elif license_type == 'email_mismatch':
-            email_entry.add_css_class("error")
-            orig_title = email_entry.get_title()
-            email_entry.set_title(_("Email does not match this license key"))
-            def _reset_email(entry=email_entry, t=orig_title):
-                entry.remove_css_class("error")
-                entry.set_title(t)
-                return False
-            _sched(dialog, 3000, _reset_email)
-        elif license_type == 'limit_reached':
-            key_entry.add_css_class("error")
-            _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
-            _show_limit_reached_dialog(dialog)
-        else:
-            key_entry.add_css_class("error")
-            _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
-        return
 
-    if on_change:
-        on_change()
-    else:
-        _build_license_section(group, rows)
+    # Disable while the network request runs to prevent double-click loops
+    if activate_row:
+        activate_row.set_sensitive(False)
+        activate_row.set_title(_("Activating…"))
+
+    def _run():
+        try:
+            return validate_license_online(key, email)
+        except Exception:
+            return (False, 'network_error', None)
+
+    def _on_result(result):
+        if activate_row:
+            activate_row.set_sensitive(True)
+            activate_row.set_title(_("Activate Pro"))
+
+        valid, license_type, expires = result
+        if not valid:
+            if license_type == 'network_error':
+                key_entry.add_css_class("error")
+                orig_title = key_entry.get_title()
+                key_entry.set_title(_("Internet connection required for activation"))
+                def _reset(entry=key_entry, t=orig_title):
+                    entry.remove_css_class("error")
+                    entry.set_title(t)
+                    return False
+                _sched(dialog, 3000, _reset)
+            elif license_type == 'email_mismatch':
+                email_entry.add_css_class("error")
+                orig_title = email_entry.get_title()
+                email_entry.set_title(_("Email does not match this license key"))
+                def _reset_email(entry=email_entry, t=orig_title):
+                    entry.remove_css_class("error")
+                    entry.set_title(t)
+                    return False
+                _sched(dialog, 3000, _reset_email)
+            elif license_type == 'limit_reached':
+                key_entry.add_css_class("error")
+                _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
+                _show_limit_reached_dialog(dialog)
+            else:
+                key_entry.add_css_class("error")
+                _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
+            return False
+
+        if on_change:
+            on_change()
+        else:
+            _build_license_section(group, rows)
+        return False
+
+    from utils.threading import run_in_thread
+    run_in_thread(_run, _on_result)
 
 
 def _show_limit_reached_dialog(parent):

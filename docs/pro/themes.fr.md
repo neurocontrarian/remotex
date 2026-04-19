@@ -13,32 +13,32 @@ Les thèmes de boutons modifient le style visuel de toutes les tuiles dans la gr
 
 Tuiles colorées pleines avec un fort contraste. C'est le thème système par défaut — les tuiles utilisent le style de carte Adwaita avec la couleur de fond de chaque bouton appliquée en remplissage plat. Fonctionne bien en mode clair et sombre.
 
+![Thème Gras](../assets/theme-bold.png)
+
 ### Cards
 
 Style de carte surélevée avec des ombres portées subtiles. Les tuiles semblent légèrement soulevées au-dessus du fond de la grille. Un bon choix si vous préférez une mise en page en couches avec de la profondeur.
+
+![Thème Cards](../assets/theme-cards.png)
 
 ### Phone
 
 Tuiles plates compactes avec un rembourrage minimal, évoquant un clavier de téléphone ou de calculatrice. Fonctionne mieux avec une taille de bouton petite ou moyenne et un nombre de colonnes plus élevé.
 
+![Thème Phone](../assets/theme-phone.png)
+
 ### Neon
 
 Fond sombre avec des bordures lumineuses qui pulsent au survol. Les couleurs par bouton deviennent la couleur de la lueur. Conçu pour le mode sombre — semble le mieux lorsque votre bureau est en mode sombre.
+
+!!! note
+    L'effet lumineux du thème Neon est une animation au survol — il se apprécie mieux en utilisation. Survolez un bouton pour voir la bordure lumineuse.
 
 ### Retro
 
 Style monochrome inspiré du terminal avec une texture de lignes de balayage. Force un fond sombre avec du texte vert ou ambre. Ignore les couleurs par bouton — toutes les tuiles se ressemblent intentionnellement.
 
----
-
-## Captures d'écran
-
-![Thème Gras](../assets/theme-bold.png){ width=49% } ![Thème Cards](../assets/theme-cards.png){ width=49% }
-
-![Thème Phone](../assets/theme-phone.png){ width=49% } ![Thème Retro](../assets/theme-retro.png){ width=49% }
-
-!!! note
-    L'effet lumineux du thème **Neon** est une animation au survol — il se apprecie mieux en utilisation. Dans la grille, les tuiles affichent un fond sombre avec du texte cyan ; la bordure lumineuse apparait lorsque vous survolez un bouton.
+![Thème Retro](../assets/theme-retro.png)
 
 ---
 

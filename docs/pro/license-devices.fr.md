@@ -46,21 +46,6 @@ Résultat : même nombre de slots, aucun slot perdu.
 
 Identique à la migration planifiée ci-dessus. Désactivez avant de réinstaller, puis réactivez ensuite. Le slot est libéré et réutilisé — votre compteur reste identique.
 
-### Crash de l'ordinateur ou réinstallation sans désactivation préalable
-
-!!! warning
-    Réinstaller sans désactiver au préalable laisse un slot d'activation orphelin.
-    L'ancien slot ne peut pas être libéré automatiquement — la machine n'existe plus pour envoyer une demande de désactivation.
-
-Si vous atteignez la limite d'activations à cause d'un slot orphelin, **contactez le support** :
-
-**[support@neurocontrarian.com](mailto:support@neurocontrarian.com)**
-
-Indiquez les 4 premiers caractères de votre clé de licence. Nous libérerons manuellement le slot orphelin depuis notre tableau de bord.
-
-!!! tip
-    Ouvrez toujours **Préférences → Licence → Désactiver** avant de réinstaller votre système ou d'effacer un appareil.
-
 ### Désactivation accidentelle de la licence
 
 Aucun problème. Réactivez simplement sur le même appareil — cela réutilise le même slot. Votre compteur d'activations n'augmente pas.
@@ -75,12 +60,10 @@ Aucun problème. Réactivez simplement sur le même appareil — cela réutilise
 
 Si vos 3 slots sont tous utilisés, l'activation échouera avec un message d'erreur.
 
-**Option 1** — Libérer un slot volontairement : ouvrez RemoteX sur l'un de vos 3 appareils actifs, allez dans **Préférences → Licence → Désactiver**, puis activez sur le nouvel appareil.
-
-**Option 2** — Si un slot est orphelin (ancien appareil inaccessible) : contactez le support à [support@neurocontrarian.com](mailto:support@neurocontrarian.com).
+Ouvrez RemoteX sur l'un de vos 3 appareils actifs, allez dans **Préférences → Licence → Désactiver**, puis activez sur le nouvel appareil.
 
 !!! note
-    Le portail client LemonSqueezy ne permet **pas** de désactiver soi-même ses instances. Pour libérer un slot, vous devez utiliser le bouton Désactiver dans RemoteX, ou contacter le support.
+    Le portail client LemonSqueezy ne permet **pas** de désactiver soi-même ses instances. Pour libérer un slot, utilisez le bouton **Désactiver** dans RemoteX sur l'un de vos appareils actifs.
 
 ---
 

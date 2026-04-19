@@ -11,6 +11,7 @@ class Machine:
     port: int = 22
     identity_file: str = ""  # Path to SSH private key
     icon_name: str = "pc-display"  # Bootstrap icon name for this machine
+    group: str = ""  # Optional group name for organizing machines
 
     def to_dict(self) -> dict:
         return {
@@ -21,6 +22,7 @@ class Machine:
             'port': self.port,
             'identity_file': self.identity_file,
             'icon_name': self.icon_name,
+            'group': self.group,
         }
 
     @classmethod
@@ -33,4 +35,5 @@ class Machine:
             port=data.get('port', 22),
             identity_file=data.get('identity_file', ''),
             icon_name=data.get('icon_name', 'pc-display'),
+            group=data.get('group', ''),
         )

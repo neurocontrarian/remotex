@@ -97,6 +97,12 @@ class _MachineDialog:
         self._key_row = Adw.EntryRow(title=_("SSH Key Path"))
         self._key_row.set_text(str(Path.home() / ".ssh" / "id_ed25519"))
         group.add(self._key_row)
+        self._group_row = Adw.EntryRow(title=_("Group"))
+        self._group_row.set_tooltip_text(
+            _("Optional group name (e.g. 'Production', 'Home').\n"
+              "Machines in the same group can be targeted together in button settings.")
+        )
+        group.add(self._group_row)
         return group
 
     def _build_icon_group(self) -> Adw.PreferencesGroup:
@@ -222,6 +228,8 @@ class _MachineDialog:
             self._port_row.set_text(str(self._machine.port))
             if self._machine.identity_file:
                 self._key_row.set_text(self._machine.identity_file)
+            if self._machine.group:
+                self._group_row.set_text(self._machine.group)
             # Set icon
             icon_to_set = self._machine.icon_name or "pc-display"
             self._update_icon_preview(icon_to_set)
@@ -265,6 +273,7 @@ class _MachineDialog:
         else:
             port = 22
 
+        group_name = self._group_row.get_text().strip()
         if self._is_edit and self._machine:
             self._machine.name = name
             self._machine.host = host
@@ -272,10 +281,11 @@ class _MachineDialog:
             self._machine.port = port
             self._machine.identity_file = key
             self._machine.icon_name = self._icon_name
+            self._machine.group = group_name
             return self._machine
         else:
             return Machine(name=name, host=host, user=user, port=port,
-                           identity_file=key, icon_name=self._icon_name)
+                           identity_file=key, icon_name=self._icon_name, group=group_name)
 
     def _on_save(self, btn):
         machine = self._build_machine_from_fields()

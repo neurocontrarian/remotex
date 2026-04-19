@@ -59,13 +59,13 @@ nav:
     - Development Workflow: use-cases/dev-workflow.md
     - Beginner Guide: use-cases/beginner.md
   - Pro Features:
+    - Overview: pro.md
     - SSH & Multi-machine: pro/ssh.md
     - Multi-select: pro/multiselect.md
     - Themes: pro/themes.md
     - Backup & Restore: pro/backup.md
     - License & Devices: pro/license-devices.md
   - AI Integration (MCP): mcp.md
-  - RemoteX Pro: pro.md
 
 markdown_extensions:
   - attr_list

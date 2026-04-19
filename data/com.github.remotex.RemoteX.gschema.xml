@@ -18,7 +18,7 @@
       <summary>Default command timeout in seconds</summary>
     </key>
     <key name="confirm-before-run" type="b">
-      <default>false</default>
+      <default>true</default>
       <summary>Ask for confirmation before executing commands</summary>
     </key>
     <key name="grid-columns" type="i">

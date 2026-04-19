@@ -46,21 +46,6 @@ Net result: same slot count, no slot lost.
 
 Same as the planned migration above. Deactivate before reinstalling, then re-activate afterwards. The slot is freed and reused — your count stays the same.
 
-### PC crash or OS reinstall without prior deactivation
-
-!!! warning
-    Reinstalling without deactivating first leaves an orphaned activation slot.
-    The old slot cannot be freed automatically — the machine no longer exists to send a deactivation request.
-
-If you hit the activation limit because of an orphaned slot, **contact support**:
-
-**[support@neurocontrarian.com](mailto:support@neurocontrarian.com)**
-
-Include the first 4 characters of your license key. We will manually free the orphaned slot from our dashboard.
-
-!!! tip "Prevent this"
-    Always open **Preferences → License → Deactivate** before reinstalling your OS or wiping a machine.
-
 ### Accidentally deactivated your license
 
 No problem. Simply re-activate on the same device — this reuses the same slot. Your activation count does not increase.
@@ -75,12 +60,10 @@ No problem. Simply re-activate on the same device — this reuses the same slot.
 
 If your 3 slots are all in use, activation will fail with an error.
 
-**Option 1** — Free a slot voluntarily: open RemoteX on one of your 3 active devices, go to **Preferences → License → Deactivate**, then activate on the new device.
-
-**Option 2** — If a slot is orphaned (old device no longer accessible): contact support at [support@neurocontrarian.com](mailto:support@neurocontrarian.com).
+Open RemoteX on one of your 3 active devices, go to **Preferences → License → Deactivate**, then activate on the new device.
 
 !!! note
-    The LemonSqueezy customer portal does **not** allow self-service instance deactivation. To free a slot you must either use the Deactivate button inside RemoteX, or contact support.
+    The LemonSqueezy customer portal does **not** allow self-service instance deactivation. To free a slot, use the **Deactivate** button inside RemoteX on one of your active devices.
 
 ---
 
