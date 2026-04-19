@@ -133,6 +133,12 @@ class RemotexApplication(Adw.Application):
             provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
+        # Register our gresource icons so symbolic icons (rendered via Cairo,
+        # not GdkPixbuf) are available to GTK — fixes missing icons in About dialog
+        # on distros like Linux Mint where the system theme lacks some symbolics.
+        Gtk.IconTheme.get_for_display(display).add_resource_path(
+            '/com/github/remotex/RemoteX'
+        )
 
     def _on_about(self, action, param):
         from i18n import _

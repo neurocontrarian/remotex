@@ -46,6 +46,18 @@ Net result: same slot count, no slot lost.
 
 Same as the planned migration above. Deactivate before reinstalling, then re-activate afterwards. The slot is freed and reused — your count stays the same.
 
+### OS reinstall — you forgot to deactivate first
+
+After reinstalling, your old activation slot still exists on LemonSqueezy (the old machine-id is still registered). Activating on the fresh install consumes a new slot.
+
+If you hit the 3-device limit because of this orphaned slot:
+
+1. Open RemoteX on any other device that is still activated and deactivate from **Preferences → License → Deactivate** to free a slot, then retry
+2. If you have no other active device to deactivate from, [contact support](mailto:support@neurocontrarian.com) — we will free the orphaned slot manually from the dashboard
+
+!!! warning "Deactivate before reinstalling"
+    To avoid this situation, always open **Preferences → License → Deactivate** before reinstalling or formatting your OS.
+
 ### Accidentally deactivated your license
 
 No problem. Simply re-activate on the same device — this reuses the same slot. Your activation count does not increase.

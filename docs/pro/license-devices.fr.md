@@ -46,6 +46,18 @@ Résultat : même nombre de slots, aucun slot perdu.
 
 Identique à la migration planifiée ci-dessus. Désactivez avant de réinstaller, puis réactivez ensuite. Le slot est libéré et réutilisé — votre compteur reste identique.
 
+### Réinstallation du système — sans désactivation préalable
+
+Après la réinstallation, votre ancien slot d'activation existe toujours chez LemonSqueezy (l'ancien identifiant machine est toujours enregistré). L'activation sur le système fraîchement installé consomme un nouveau slot.
+
+Si vous atteignez la limite de 3 appareils à cause de ce slot orphelin :
+
+1. Ouvrez RemoteX sur un autre appareil encore activé et désactivez via **Préférences → Licence → Désactiver** pour libérer un slot, puis réessayez
+2. Si vous n'avez aucun autre appareil actif pour désactiver, [contactez le support](mailto:support@neurocontrarian.com) — nous libérerons le slot orphelin manuellement depuis le tableau de bord
+
+!!! warning "Désactivez avant de réinstaller"
+    Pour éviter cette situation, ouvrez toujours **Préférences → Licence → Désactiver** avant de réinstaller ou de formater votre système d'exploitation.
+
 ### Désactivation accidentelle de la licence
 
 Aucun problème. Réactivez simplement sur le même appareil — cela réutilise le même slot. Votre compteur d'activations n'augmente pas.
