@@ -121,18 +121,7 @@ TOOLS = [
             "additionalProperties": False,
         },
     },
-    {
-        "name": "delete_button",
-        "description": "Permanently delete a RemoteX button by ID.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "id": {"type": "string", "description": "Button UUID to delete"},
-            },
-            "required": ["id"],
-            "additionalProperties": False,
-        },
-    },
+    # delete_button intentionally not exposed — deletion requires the RemoteX UI.
     {
         "name": "list_categories",
         "description": "List all category names used by RemoteX buttons (sorted).",
@@ -277,7 +266,6 @@ HANDLERS = {
     "get_button":      handle_get_button,
     "create_button":   handle_create_button,
     "update_button":   handle_update_button,
-    "delete_button":   handle_delete_button,
     "list_categories": handle_list_categories,
     "list_machines":   handle_list_machines,
 }

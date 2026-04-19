@@ -161,9 +161,11 @@ Replace `/path/to/remotex` with your actual installation path — typically the 
 | `get_button` | Get details of a button by name or ID |
 | `create_button` | Create a new button (name, command, category, color, icon, appearance…) |
 | `update_button` | Modify any field on an existing button — call `get_button` first to get the ID |
-| `delete_button` | Delete a button |
 | `list_categories` | List all category names |
 | `list_machines` | List SSH machines (name, host, user — no private keys) |
+
+!!! note "Deletion is not available via MCP"
+    Buttons can only be deleted from the RemoteX interface itself (right-click → Delete, or multi-select). This is intentional — it prevents an AI assistant from accidentally removing your buttons.
 
 !!! tip "Tip for updating buttons"
     If the AI says it cannot update a button, ask it to call `get_button` with the button name first to retrieve the ID, then call `update_button` with that ID.

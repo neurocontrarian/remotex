@@ -82,7 +82,7 @@ RemoteX includes a built-in [MCP](https://modelcontextprotocol.io) server so AI 
 
 Enable it in **Preferences → Desktop Integration → Allow MCP access** (disabled by default).
 
-Available tools: `list_buttons`, `get_button`, `create_button`, `update_button`, `delete_button`, `list_categories`, `list_machines`.
+Available tools: `list_buttons`, `get_button`, `create_button`, `update_button`, `list_categories`, `list_machines`. Deletion is intentionally not available via MCP.
 
 Add to your MCP client config (e.g. `~/.config/Claude/claude_desktop_config.json`):
 
@@ -167,6 +167,16 @@ A Flatpak package will be published on Flathub.
 | SSH | Fabric 3.x (Paramiko) |
 | Config | TOML (`tomllib` + `tomli_w`) |
 | Build | Meson |
+
+---
+
+## Contributing
+
+### Default button ideas
+
+RemoteX ships with 34 built-in buttons (Linux Essentials, Development). If you have ideas for useful commands that should be included by default, share them in the [Discussions](https://github.com/neurocontrarian/remotex/discussions) section on GitHub.
+
+Good candidates: cross-distro commands, broadly useful for beginners or sysadmins, with clear output.
 
 ---
 
