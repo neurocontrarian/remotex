@@ -2,9 +2,11 @@
 """
 RemoteX MCP Server — config-only, JSON-RPC 2.0 stdio transport.
 
-Exposes 7 tools for reading and writing the RemoteX button/machine config:
-  list_buttons, get_button, create_button, update_button, delete_button,
+Exposes 6 tools for reading and writing the RemoteX button/machine config:
+  list_buttons, get_button, create_button, update_button,
   list_categories, list_machines
+
+Deletion is intentionally not exposed — buttons must be deleted from the UI.
 
 Add to Claude Desktop (~/.config/Claude/claude_desktop_config.json):
   {
@@ -88,6 +90,8 @@ TOOLS = [
                     "items": {"type": "string"},
                     "description": "Machine UUIDs to run on. Empty list = local. Use list_machines to get UUIDs.",
                 },
+                "execution_mode":     {"type": "string",  "description": "Output mode: 'silent' (toast only), 'output' (show dialog), 'terminal' (open terminal). Default: 'silent'."},
+                "run_as_user":        {"type": "string",  "description": "Run as a different user on remote (e.g. 'root'). Terminal + remote only."},
             },
             "required": ["name", "command"],
             "additionalProperties": False,
@@ -116,6 +120,8 @@ TOOLS = [
                     "items": {"type": "string"},
                     "description": "Machine UUIDs to run on. Empty list = local only. Use list_machines to get UUIDs.",
                 },
+                "execution_mode":     {"type": "string",  "description": "Output mode: 'silent', 'output', or 'terminal'."},
+                "run_as_user":        {"type": "string",  "description": "Run as a different user on remote. Terminal + remote only."},
             },
             "required": ["id"],
             "additionalProperties": False,
@@ -153,8 +159,13 @@ def _button_to_dict(b: CommandButton) -> dict:
         "tooltip":            b.tooltip,
         "icon_name":          b.icon_name,
         "color":              b.color,
+        "text_color":         b.text_color,
+        "hide_label":         b.hide_label,
+        "hide_icon":          b.hide_icon,
         "show_output":        b.show_output,
+        "execution_mode":     b.execution_mode,
         "confirm_before_run": b.confirm_before_run,
+        "run_as_user":        b.run_as_user,
         "is_default":         b.is_default,
         "machine_ids":        b.machine_ids,
         "position":           b.position,
@@ -191,8 +202,18 @@ def handle_get_button(args: dict) -> str:
     else:
         btn = next((b for b in buttons if b.name.lower() == name.lower()), None)
     if btn is None:
-        return "Button not found"
+        return "Error: button not found"
     return json.dumps(_button_to_dict(btn), ensure_ascii=False, indent=2)
+
+
+def _validate_machine_ids(ids: list) -> str | None:
+    if not isinstance(ids, list):
+        return "Error: machine_ids must be a list"
+    known = {m.id for m in _config.load_machines()} | {""}
+    bad = [mid for mid in ids if mid not in known]
+    if bad:
+        return f"Error: unknown machine IDs {bad} — call list_machines to get valid UUIDs"
+    return None
 
 
 def handle_create_button(args: dict) -> str:
@@ -200,6 +221,10 @@ def handle_create_button(args: dict) -> str:
     command = args.get("command", "").strip()
     if not name or not command:
         return "Error: 'name' and 'command' are required"
+    machine_ids = args.get("machine_ids", [])
+    err = _validate_machine_ids(machine_ids)
+    if err:
+        return err
     btn = CommandButton(
         name=name,
         command=command,
@@ -212,7 +237,9 @@ def handle_create_button(args: dict) -> str:
         text_color=         args.get("text_color", ""),
         hide_label=         bool(args.get("hide_label", False)),
         hide_icon=          bool(args.get("hide_icon", False)),
-        machine_ids=        args.get("machine_ids", []),
+        execution_mode=     args.get("execution_mode", ""),
+        run_as_user=        args.get("run_as_user", ""),
+        machine_ids=        machine_ids,
     )
     _config.add_button(btn)
     return json.dumps({"created": _button_to_dict(btn)}, ensure_ascii=False, indent=2)
@@ -225,29 +252,22 @@ def handle_update_button(args: dict) -> str:
     buttons = _config.load_buttons()
     btn = next((b for b in buttons if b.id == bid), None)
     if btn is None:
-        return f"Button not found: {bid}"
-    for field in ("name", "command", "category", "tooltip", "icon_name", "color", "text_color"):
+        return f"Error: button not found: {bid}"
+    for field in ("name", "command", "category", "tooltip", "icon_name", "color",
+                  "text_color", "execution_mode", "run_as_user"):
         if field in args:
             setattr(btn, field, args[field])
     for field in ("show_output", "confirm_before_run", "hide_label", "hide_icon"):
         if field in args:
             setattr(btn, field, bool(args[field]))
     if "machine_ids" in args:
+        err = _validate_machine_ids(args["machine_ids"])
+        if err:
+            return err
         btn.machine_ids = args["machine_ids"]
     _config.update_button(btn)
     return json.dumps({"updated": _button_to_dict(btn)}, ensure_ascii=False, indent=2)
 
-
-def handle_delete_button(args: dict) -> str:
-    bid = args.get("id", "")
-    if not bid:
-        return "Error: 'id' is required"
-    buttons = _config.load_buttons()
-    btn = next((b for b in buttons if b.id == bid), None)
-    if btn is None:
-        return f"Button not found: {bid}"
-    _config.delete_button(bid)
-    return f"Deleted button '{btn.name}' ({bid})"
 
 
 def handle_list_categories(args: dict) -> str:
@@ -284,7 +304,7 @@ def _send_error(req_id, code: int, message: str):
 
 def _dispatch(msg: dict):
     method  = msg.get("method", "")
-    req_id  = msg.get("id")       # None for notifications
+    req_id  = msg.get("id")
     params  = msg.get("params") or {}
 
     if method == "initialize":
