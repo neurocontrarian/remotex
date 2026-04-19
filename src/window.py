@@ -391,7 +391,7 @@ class RemotexWindow(Adw.ApplicationWindow):
                     _("Button limit reached — upgrade to Pro for unlimited buttons")
                 )
 
-    def populate_grid(self):
+    def populate_grid(self, flash: bool = False):
         """Load buttons from config and rebuild the FlowBox grid."""
         while child := self.flow_box.get_first_child():
             self.flow_box.remove(child)
@@ -419,6 +419,10 @@ class RemotexWindow(Adw.ApplicationWindow):
             self._tiles[btn.id] = tile
 
         self.flow_box.set_filter_func(self._filter_func)
+
+        if flash:
+            self.flow_box.set_opacity(0.3)
+            GLib.timeout_add(110, lambda: (self.flow_box.set_opacity(1.0), False)[1])
 
         # Restore visual selection for tiles that still exist
         self._ms.selected_ids = {bid for bid in self._ms.selected_ids if bid in self._tiles}

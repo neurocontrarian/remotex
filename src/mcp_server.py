@@ -129,6 +129,15 @@ TOOLS = [
     },
     # delete_button intentionally not exposed — deletion requires the RemoteX UI.
     {
+        "name": "help",
+        "description": "Return usage instructions and recommended workflows for the RemoteX MCP server. Call this first if unsure how to proceed.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": False,
+        },
+    },
+    {
         "name": "list_categories",
         "description": "List all category names used by RemoteX buttons (sorted).",
         "inputSchema": {
@@ -281,6 +290,53 @@ def handle_list_machines(args: dict) -> str:
     return json.dumps([_machine_to_dict(m) for m in machines], ensure_ascii=False, indent=2)
 
 
+_HELP_TEXT = """\
+RemoteX MCP — available tools and recommended workflows
+========================================================
+
+TOOLS
+-----
+  help              — Show this guide (no arguments)
+  list_buttons      — List all buttons, optionally filtered by category
+  get_button        — Get one button by id or name
+  create_button     — Create a new button (name + command required)
+  update_button     — Patch an existing button by id (only provided fields are changed)
+  list_categories   — List all existing category names
+  list_machines     — List SSH machines (id, name, host, user, port)
+
+WORKFLOWS
+---------
+1. Before using machine_ids in create_button or update_button:
+   → call list_machines first to get valid UUIDs.
+   → machine_ids=[]         means local execution only.
+   → machine_ids=["<uuid>"] means run on that remote machine.
+   → machine_ids=["", "<uuid>"] means ask user to pick (local or remote) at run time.
+
+2. Before calling update_button, you need the button's id:
+   → call get_button(name="...") to retrieve it.
+
+3. To avoid duplicate category names:
+   → call list_categories first, reuse an existing name if it fits.
+
+4. delete_button does NOT exist — button deletion must be done in the RemoteX UI.
+
+5. Execution modes for create_button / update_button:
+   → "silent"   — run silently, show a toast notification only.
+   → "output"   — open an output dialog showing stdout/stderr.
+   → "terminal" — open a terminal window (requires a terminal emulator installed).
+   Default is "silent".
+
+NOTES
+-----
+- Private key paths are never returned by list_machines (security).
+- The MCP server must be enabled in RemoteX → Preferences → Desktop Integration.
+"""
+
+
+def handle_help(args: dict) -> str:
+    return _HELP_TEXT
+
+
 HANDLERS = {
     "list_buttons":    handle_list_buttons,
     "get_button":      handle_get_button,
@@ -288,6 +344,7 @@ HANDLERS = {
     "update_button":   handle_update_button,
     "list_categories": handle_list_categories,
     "list_machines":   handle_list_machines,
+    "help":            handle_help,
 }
 
 # ── JSON-RPC 2.0 / MCP protocol ──────────────────────────────────────────────

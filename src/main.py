@@ -4,7 +4,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
 
-APP_VERSION = "1.3.6"
+APP_VERSION = "1.3.7"
 
 
 def _suppress_svg_icon_warnings(log_domain, log_level, message, user_data):
@@ -145,8 +145,8 @@ class RemotexApplication(Adw.Application):
             license_type=Gtk.License.MIT_X11,
             developers=['neurocontrarian'],
             website='https://github.com/neurocontrarian/remotex',
-            issue_url='https://github.com/neurocontrarian/remotex/issues',
         )
+        about.add_link(_("Report an Issue"), 'https://github.com/neurocontrarian/remotex/issues')
         about.present(self.props.active_window)
 
     def _on_manage_machines(self, action, param):
@@ -183,7 +183,7 @@ class RemotexApplication(Adw.Application):
     def _on_refresh(self, action, param):
         win = self.props.active_window
         if win:
-            win.populate_grid()
+            win.populate_grid(flash=True)
 
     def _on_add_button(self, action, param):
         win = self.props.active_window

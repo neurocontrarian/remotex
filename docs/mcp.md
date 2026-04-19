@@ -203,10 +203,33 @@ Replace `/path/to/remotex` with your actual installation path — typically the 
 
 ---
 
+## Recommended system prompt
+
+Some models (especially smaller local ones) don't automatically chain tool calls when they're unsure how to proceed. Adding this line to the model's system prompt fixes that:
+
+```
+If you are unsure how to proceed or which tool to call first, call the `help` tool — it returns the full workflow guide for this API.
+```
+
+=== "Open WebUI"
+
+    In Open WebUI, go to **Admin Panel → Settings → System prompt** and add the line above (or paste it into the chat's system prompt field in Model Settings).
+
+=== "Claude Desktop"
+
+    Claude Desktop does not expose a system prompt field. The `help` tool description is self-explanatory for Claude — no extra prompt needed.
+
+=== "Other clients"
+
+    Add the line to whatever system prompt or instruction field your client exposes before the conversation starts.
+
+---
+
 ## What your AI can do
 
 | Tool | Description |
 |------|-------------|
+| `help` | Return the full workflow guide — call this first if unsure how to proceed |
 | `list_buttons` | List all buttons, optionally filtered by category |
 | `get_button` | Get details of a button by name or ID |
 | `create_button` | Create a new button (name, command, category, color, icon, appearance…) |
