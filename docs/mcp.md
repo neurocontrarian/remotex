@@ -217,6 +217,9 @@ Replace `/path/to/remotex` with your actual installation path — typically the 
 !!! note "Deletion is not available via MCP"
     Buttons can only be deleted from the RemoteX interface itself (right-click → Delete, or multi-select). This is intentional — it prevents an AI assistant from accidentally removing your buttons.
 
+!!! tip "Refreshing the grid after AI changes"
+    After an AI creates or modifies a button, press **F5** (or menu → Refresh Buttons) to reload the grid without restarting RemoteX.
+
 !!! tip "Tip for updating buttons"
     If the AI says it cannot update a button, ask it to call `get_button` with the button name first to retrieve the ID, then call `update_button` with that ID.
 

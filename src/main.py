@@ -119,6 +119,11 @@ class RemotexApplication(Adw.Application):
         self.add_action(add_button_action)
         self.set_accels_for_action('app.add-button', ['<primary>n'])
 
+        refresh_action = Gio.SimpleAction.new('refresh', None)
+        refresh_action.connect('activate', self._on_refresh)
+        self.add_action(refresh_action)
+        self.set_accels_for_action('app.refresh', ['F5'])
+
     def _load_css(self):
         provider = Gtk.CssProvider()
         provider.load_from_resource('/com/github/remotex/RemoteX/style.css')
@@ -174,6 +179,11 @@ class RemotexApplication(Adw.Application):
         shortcuts_win = builder.get_object('shortcuts_window')
         shortcuts_win.set_transient_for(win)
         shortcuts_win.present()
+
+    def _on_refresh(self, action, param):
+        win = self.props.active_window
+        if win:
+            win.populate_grid()
 
     def _on_add_button(self, action, param):
         win = self.props.active_window

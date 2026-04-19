@@ -107,6 +107,12 @@
   <menu id="primary_menu">
     <section>
       <item>
+        <attribute name="label" translatable="yes">Refresh Buttons</attribute>
+        <attribute name="action">app.refresh</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">Always on Top</attribute>
         <attribute name="action">win.always-on-top</attribute>
       </item>
