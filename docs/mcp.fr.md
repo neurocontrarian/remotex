@@ -149,6 +149,56 @@ Choisissez votre outil ci-dessous. La configuration est effectuée une seule foi
     !!! tip
         Cela fonctionne avec n'importe quel backend supporté par Open WebUI — llama.cpp, Ollama, API compatibles OpenAI, etc. La couche outils est indépendante du modèle. La prise en charge du tool-calling varie selon le modèle — les modèles instruction-tuned fonctionnent généralement mieux.
 
+    ---
+
+    **Quand redémarrer mcpo**
+
+    mcpo lance `mcp_server.py` comme sous-processus au démarrage et le garde en mémoire. Vous devez redémarrer mcpo chaque fois que :
+
+    - Vous mettez à jour RemoteX (`git pull`) — l'ancien `mcp_server.py` reste chargé jusqu'au redémarrage
+    - Vous activez ou désactivez **Autoriser l'accès MCP** dans les Préférences
+
+    Si vous utilisez systemd (voir ci-dessous) : `systemctl --user restart mcpo-remotex`
+
+    Sinon : appuyez sur `Ctrl+C` dans le terminal mcpo et relancez l'étape 3.
+
+    ---
+
+    **Étape 6 — (Optionnel) Rendre mcpo persistant au redémarrage**
+
+    Créez un service systemd utilisateur pour que mcpo démarre automatiquement à la connexion :
+
+    ```bash
+    mkdir -p ~/.config/systemd/user
+    cat > ~/.config/systemd/user/mcpo-remotex.service << 'EOF'
+    [Unit]
+    Description=mcpo proxy pour le serveur MCP RemoteX
+
+    [Service]
+    ExecStart=%h/.local/bin/mcpo --port 8000 -- python3 %h/remotex/src/mcp_server.py
+    Restart=on-failure
+    RestartSec=5
+
+    [Install]
+    WantedBy=default.target
+    EOF
+
+    systemctl --user daemon-reload
+    systemctl --user enable --now mcpo-remotex
+    ```
+
+    Commandes utiles :
+
+    ```bash
+    systemctl --user status mcpo-remotex    # vérifier l'état
+    systemctl --user restart mcpo-remotex   # redémarrer après un git pull
+    systemctl --user stop mcpo-remotex      # arrêter
+    journalctl --user -u mcpo-remotex -f    # logs en direct
+    ```
+
+    !!! note
+        Ajustez les chemins dans `ExecStart` si votre installation RemoteX n'est pas dans `~/remotex` ou si mcpo n'est pas installé via pipx. Lancez `which mcpo` pour trouver le bon chemin.
+
 Remplacez `/chemin/vers/remotex` par votre chemin d'installation réel — généralement le dossier où vous avez cloné le dépôt.
 
 ---

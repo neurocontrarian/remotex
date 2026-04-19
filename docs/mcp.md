@@ -149,6 +149,56 @@ Pick your tool below. The setup is done once; after that it works automatically.
     !!! tip
         This works with any backend supported by Open WebUI — llama.cpp, Ollama, OpenAI-compatible APIs, etc. The tool layer is independent of the model. Tool-calling support varies by model — instruction-tuned models generally work best.
 
+    ---
+
+    **When to restart mcpo**
+
+    mcpo launches `mcp_server.py` as a subprocess at startup and keeps it in memory. You must restart mcpo whenever:
+
+    - You update RemoteX (`git pull`) — the old `mcp_server.py` stays loaded until restart
+    - You enable or disable **Allow MCP access** in Preferences
+
+    If using systemd (see below): `systemctl --user restart mcpo-remotex`
+
+    Otherwise: press `Ctrl+C` in the mcpo terminal and relaunch Step 3.
+
+    ---
+
+    **Step 6 — (Optional) Make mcpo persistent across reboots**
+
+    Create a systemd user service so mcpo starts automatically at login:
+
+    ```bash
+    mkdir -p ~/.config/systemd/user
+    cat > ~/.config/systemd/user/mcpo-remotex.service << 'EOF'
+    [Unit]
+    Description=mcpo proxy for RemoteX MCP server
+
+    [Service]
+    ExecStart=%h/.local/bin/mcpo --port 8000 -- python3 %h/remotex/src/mcp_server.py
+    Restart=on-failure
+    RestartSec=5
+
+    [Install]
+    WantedBy=default.target
+    EOF
+
+    systemctl --user daemon-reload
+    systemctl --user enable --now mcpo-remotex
+    ```
+
+    Useful commands:
+
+    ```bash
+    systemctl --user status mcpo-remotex    # check status
+    systemctl --user restart mcpo-remotex   # restart after a git pull
+    systemctl --user stop mcpo-remotex      # stop
+    journalctl --user -u mcpo-remotex -f    # live logs
+    ```
+
+    !!! note
+        Adjust the paths in `ExecStart` if your RemoteX installation is not at `~/remotex` or if mcpo is not installed via pipx. Run `which mcpo` to find the correct path.
+
 Replace `/path/to/remotex` with your actual installation path — typically the folder where you cloned the repo.
 
 ---
