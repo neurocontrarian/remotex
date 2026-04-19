@@ -84,7 +84,7 @@ Applies a visual style to all button tiles. See [Themes](../pro/themes.md) for a
 
 ### Always on top
 
-When enabled, the RemoteX window floats above all other windows. Implemented via `wmctrl` — optional, but required for this feature. Install it if needed:
+When enabled, the RemoteX window floats above all other windows. Requires `wmctrl`, which is listed as a required dependency (included in the installation instructions). If it is missing from your system:
 
 ```bash
 sudo apt install wmctrl
@@ -132,7 +132,7 @@ Manages your RemoteX Pro license.
 2. Paste your license key in the field
 3. Click **Activate Pro**
 
-An internet connection is required for the initial activation. The key is stored locally at `~/.config/remotex/license.key`.
+An internet connection is required for the initial activation.
 
 ### Active license display
 
@@ -148,6 +148,6 @@ Click **Renew license** to revalidate your key after purchasing a renewal. Requi
 
 ### Deactivating
 
-Click **Deactivate license** to remove the Pro license from this device. The key is deleted from `~/.config/remotex/license.key`. Free tier limits apply immediately.
+Click **Deactivate license** to remove the Pro license from this device. Free tier limits apply immediately.
 
 Your buttons and machines are not deleted — custom buttons beyond 3 are temporarily hidden until you reactivate.

@@ -16,21 +16,21 @@ This is the recommended method until the Flatpak package is available.
 
     ```bash
     sudo apt install python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 \
-      libgtk-4-1 python3-gi-cairo libglib2.0-bin git
+      libgtk-4-1 python3-gi-cairo libglib2.0-bin wmctrl git
     ```
 
 === "Fedora"
 
     ```bash
     sudo dnf install python3-gobject gtk4 libadwaita \
-      python3-cairo glib2 git
+      python3-cairo glib2 wmctrl git
     ```
 
 === "Arch Linux"
 
     ```bash
     sudo pacman -S python-gobject gtk4 libadwaita \
-      python-cairo glib2 git
+      python-cairo glib2 wmctrl git
     ```
 
 ### 2. Clone and run

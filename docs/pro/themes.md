@@ -33,9 +33,12 @@ Terminal-inspired monochrome style with a scanline texture. Forces a dark backgr
 
 ## Screenshots
 
-![Bold theme](../assets/theme-bold.png){ width=49% } ![Neon theme](../assets/theme-neon.png){ width=49% }
+![Bold theme](../assets/theme-bold.png){ width=49% } ![Cards theme](../assets/theme-cards.png){ width=49% }
 
-![Retro theme](../assets/theme-retro.png){ width=49% }
+![Phone theme](../assets/theme-phone.png){ width=49% } ![Retro theme](../assets/theme-retro.png){ width=49% }
+
+!!! note
+    The **Neon** theme's glow effect is a hover animation — it is best appreciated at runtime. In the grid, tiles appear with a dark background and cyan text; the glowing border appears when you move the mouse over a button.
 
 ---
 

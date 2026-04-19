@@ -20,6 +20,12 @@ if ! dpkg -s librsvg2-common &>/dev/null 2>&1; then
   echo "   Fix: sudo apt install librsvg2-common"
   echo ""
 fi
+if ! command -v wmctrl &>/dev/null 2>&1; then
+  echo "⚠  Missing system package: wmctrl"
+  echo "   'Always on top' will not work without it."
+  echo "   Fix: sudo apt install wmctrl"
+  echo ""
+fi
 
 echo "Checking Python dependencies..."
 "$VENV/bin/pip" install --quiet -r "$SCRIPT_DIR/requirements.txt"

@@ -14,8 +14,9 @@ _LICENSE_FILE = _CONFIG_DIR / 'license.key'
 FREE_BUTTON_LIMIT = 3
 FREE_MACHINE_LIMIT = 0
 
-PRO_INFO_URL = "https://github.com/flelard/remotex#remotex-pro"
-PRO_BUY_URL  = "https://neurocontrarian.lemonsqueezy.com/checkout/buy/f2b9451a-588d-49c2-b1ed-1afe21ffd9e2"
+PRO_INFO_URL    = "https://github.com/flelard/remotex#remotex-pro"
+PRO_BUY_URL     = "https://neurocontrarian.lemonsqueezy.com/checkout/buy/f2b9451a-588d-49c2-b1ed-1afe21ffd9e2"
+SUPPORT_EMAIL   = "support@neurocontrarian.com"
 
 _GRACE_DAYS       = 3    # Extra days after yearly expiry before access is cut
 _WARN_DAYS        = 30   # Days before yearly expiry to show a warning toast
@@ -154,6 +155,7 @@ def get_license_info() -> dict:
             'active': False, 'key': '', 'type': '', 'expires': None,
             'activated_at': None, 'is_expired': False,
             'days_until_expiry': None, 'expiry_warning': False,
+            'activation_limit': None, 'activation_usage': None,
         }
     expired = _is_expired(data)
     days = _compute_days_until(data.get('expires')) if data.get('type') == 'yearly' else None
@@ -166,15 +168,16 @@ def get_license_info() -> dict:
         'is_expired': expired,
         'days_until_expiry': days,
         'expiry_warning': days is not None and 0 <= days <= _WARN_DAYS,
+        'activation_limit': data.get('activation_limit'),
+        'activation_usage': data.get('activation_usage'),
     }
 
 
-def validate_license_online(key: str) -> tuple[bool, str, str | None]:
+def validate_license_online(key: str, email: str = '') -> tuple[bool, str, str | None]:
     """Activate a license key against LemonSqueezy and save locally if valid.
 
-    Returns (valid, license_type, expires_iso_or_None).
-    On any network failure falls back to basic format check so the app
-    degrades gracefully when LemonSqueezy is unreachable.
+    Returns (valid, license_type_or_error_code, expires_iso_or_None).
+    Error codes: 'network_error', 'email_mismatch', 'limit_reached'
     """
     key = key.strip()
     if len(key) < 8:
@@ -187,18 +190,31 @@ def validate_license_online(key: str) -> tuple[bool, str, str | None]:
             'license_key': key,
             'instance_name': machine_id,
         })
-    except urllib.error.HTTPError:
-        # LemonSqueezy responded with 4xx — key is invalid
+    except urllib.error.HTTPError as e:
+        if e.code == 422:
+            return False, 'limit_reached', None
         return False, '', None
     except Exception:
-        # Network unavailable — cannot verify a new key without connectivity
         return False, 'network_error', None
 
     if not result.get('activated'):
         return False, '', None
 
+    # App-side email validation: compare user input vs purchase email
+    if email:
+        customer_email = (result.get('meta') or {}).get('customer_email', '')
+        if customer_email and email.strip().lower() != customer_email.lower():
+            instance_id = (result.get('instance') or {}).get('id')
+            if instance_id:
+                try:
+                    _post('deactivate', {'license_key': key, 'instance_id': instance_id})
+                except Exception:
+                    pass
+            return False, 'email_mismatch', None
+
     license_type, expires = _parse_ls_response(result)
     instance_id = (result.get('instance') or {}).get('id')
+    lk = result.get('license_key') or {}
 
     _write_raw({
         'key': key,
@@ -208,6 +224,8 @@ def validate_license_online(key: str) -> tuple[bool, str, str | None]:
         'instance_id': instance_id,
         'machine_id': machine_id,
         'last_validated_at': date.today().isoformat(),
+        'activation_limit': lk.get('activation_limit'),
+        'activation_usage': lk.get('activation_usage'),
     })
     return True, license_type, expires
 
@@ -250,10 +268,13 @@ def revalidate_license() -> bool:
 
     if result.get('valid'):
         data['last_validated_at'] = date.today().isoformat()
-        # Refresh expiry in case of renewal
         license_type, expires = _parse_ls_response(result)
         data['type'] = license_type
         data['expires'] = expires
+        lk = result.get('license_key') or {}
+        if lk.get('activation_limit') is not None:
+            data['activation_limit'] = lk['activation_limit']
+            data['activation_usage'] = lk.get('activation_usage')
         _write_raw(data)
         return True
 

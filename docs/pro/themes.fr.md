@@ -33,9 +33,12 @@ Style monochrome inspiré du terminal avec une texture de lignes de balayage. Fo
 
 ## Captures d'écran
 
-![Thème Gras](../assets/theme-bold.png){ width=49% } ![Thème Neon](../assets/theme-neon.png){ width=49% }
+![Thème Gras](../assets/theme-bold.png){ width=49% } ![Thème Cards](../assets/theme-cards.png){ width=49% }
 
-![Thème Retro](../assets/theme-retro.png){ width=49% }
+![Thème Phone](../assets/theme-phone.png){ width=49% } ![Thème Retro](../assets/theme-retro.png){ width=49% }
+
+!!! note
+    L'effet lumineux du thème **Neon** est une animation au survol — il se apprecie mieux en utilisation. Dans la grille, les tuiles affichent un fond sombre avec du texte cyan ; la bordure lumineuse apparait lorsque vous survolez un bouton.
 
 ---
 

@@ -84,7 +84,7 @@ Applique un style visuel à toutes les tuiles de boutons. Consultez [Thèmes](..
 
 ### Toujours au premier plan
 
-Lorsque cette option est activée, la fenêtre RemoteX flotte au-dessus de toutes les autres fenêtres. Implémenté via `wmctrl` — optionnel, mais nécessaire pour cette fonctionnalité. Installez-le si besoin :
+Lorsque cette option est activée, la fenêtre RemoteX flotte au-dessus de toutes les autres fenêtres. Nécessite `wmctrl`, inclus dans les dépendances requises (voir les instructions d'installation). Si le paquet est absent de votre système :
 
 ```bash
 sudo apt install wmctrl
@@ -132,7 +132,7 @@ Gère votre licence RemoteX Pro.
 2. Collez votre clé de licence dans le champ
 3. Cliquez sur **Activer Pro**
 
-Une connexion internet est nécessaire pour l'activation initiale. La clé est stockée localement dans `~/.config/remotex/license.key`.
+Une connexion internet est nécessaire pour l'activation initiale.
 
 ### Affichage de la licence active
 
@@ -148,6 +148,6 @@ Cliquez sur **Renouveler la licence** pour revalider votre clé après l'achat d
 
 ### Désactivation
 
-Cliquez sur **Désactiver la licence** pour retirer la licence Pro de cet appareil. La clé est supprimée de `~/.config/remotex/license.key`. Les limites de la version gratuite s'appliquent immédiatement.
+Cliquez sur **Désactiver la licence** pour retirer la licence Pro de cet appareil. Les limites de la version gratuite s'appliquent immédiatement.
 
 Vos boutons et machines ne sont pas supprimés — les boutons personnalisés au-delà de 3 sont temporairement masqués jusqu'à la réactivation.

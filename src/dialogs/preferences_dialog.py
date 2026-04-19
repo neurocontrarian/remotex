@@ -10,7 +10,7 @@ from gi.repository import Gtk, Adw, Gio, GLib
 from pro.license import (
     is_pro_active, get_license_key, get_license_info,
     clear_license_key, validate_license_online,
-    FREE_BUTTON_LIMIT, FREE_MACHINE_LIMIT, PRO_INFO_URL, PRO_BUY_URL,
+    FREE_BUTTON_LIMIT, FREE_MACHINE_LIMIT, PRO_INFO_URL, PRO_BUY_URL, SUPPORT_EMAIL,
 )
 from i18n import _, set_language, SUPPORTED_LANGUAGES
 
@@ -608,6 +608,13 @@ def _build_license_section(group: Adw.PreferencesGroup, rows: list, on_change=No
         key_row.set_subtitle(masked)
         rows.append(key_row)
 
+        al = info.get('activation_limit')
+        au = info.get('activation_usage')
+        if al is not None and au is not None:
+            act_row = Adw.ActionRow(title=_("Activations"))
+            act_row.set_subtitle(_("{used} / {limit} devices").format(used=au, limit=al))
+            rows.append(act_row)
+
         if is_yearly:
             renew_row = Adw.ActionRow(title=_("Renew license"))
             renew_row.set_subtitle(_("Get a new yearly key at the same price"))
@@ -671,11 +678,17 @@ def _build_license_section(group: Adw.PreferencesGroup, rows: list, on_change=No
         key_entry.set_show_apply_button(False)
         rows.append(key_entry)
 
+        email_entry = Adw.EntryRow(title=_("Purchase email"))
+        email_entry.set_input_purpose(Gtk.InputPurpose.EMAIL)
+        email_entry.set_show_apply_button(False)
+        email_entry.set_tooltip_text(_("The email address used when purchasing your license"))
+        rows.append(email_entry)
+
         activate_row = Adw.ActionRow(title=_("Activate Pro"))
-        activate_row.set_subtitle(_("Enter your license key above, then click Activate"))
+        activate_row.set_subtitle(_("Enter your license key and purchase email, then click Activate"))
         activate_row.set_activatable(True)
         activate_row.add_css_class("suggested-action")
-        activate_row.connect("activated", lambda _: _on_activate(key_entry, group, rows, dialog, on_change))
+        activate_row.connect("activated", lambda _: _on_activate(key_entry, email_entry, group, rows, dialog, on_change))
         rows.append(activate_row)
 
         buy_row = Adw.ActionRow(title=_("Get RemoteX Pro — $20/year or $40 lifetime"))
@@ -705,18 +718,19 @@ def _sched(dialog, delay_ms, callback):
     return tid
 
 
-def _on_activate(key_entry: Adw.EntryRow, group: Adw.PreferencesGroup, rows: list, dialog=None, on_change=None):
+def _on_activate(key_entry: Adw.EntryRow, email_entry: Adw.EntryRow,
+                 group: Adw.PreferencesGroup, rows: list, dialog=None, on_change=None):
     key = key_entry.get_text().strip()
     if not key:
         key_entry.add_css_class("error")
         _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
         return
 
-    # validate_license_online activates on LemonSqueezy and saves locally if valid
-    valid, license_type, expires = validate_license_online(key)
+    email = email_entry.get_text().strip()
+    valid, license_type, expires = validate_license_online(key, email)
     if not valid:
-        key_entry.add_css_class("error")
         if license_type == 'network_error':
+            key_entry.add_css_class("error")
             orig_title = key_entry.get_title()
             key_entry.set_title(_("Internet connection required for activation"))
             def _reset(entry=key_entry, t=orig_title):
@@ -724,7 +738,21 @@ def _on_activate(key_entry: Adw.EntryRow, group: Adw.PreferencesGroup, rows: lis
                 entry.set_title(t)
                 return False
             _sched(dialog, 3000, _reset)
+        elif license_type == 'email_mismatch':
+            email_entry.add_css_class("error")
+            orig_title = email_entry.get_title()
+            email_entry.set_title(_("Email does not match this license key"))
+            def _reset_email(entry=email_entry, t=orig_title):
+                entry.remove_css_class("error")
+                entry.set_title(t)
+                return False
+            _sched(dialog, 3000, _reset_email)
+        elif license_type == 'limit_reached':
+            key_entry.add_css_class("error")
+            _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
+            _show_limit_reached_dialog(dialog)
         else:
+            key_entry.add_css_class("error")
             _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
         return
 
@@ -732,6 +760,21 @@ def _on_activate(key_entry: Adw.EntryRow, group: Adw.PreferencesGroup, rows: lis
         on_change()
     else:
         _build_license_section(group, rows)
+
+
+def _show_limit_reached_dialog(parent):
+    dlg = Adw.AlertDialog(
+        heading=_("Activation limit reached"),
+        body=_(
+            "You have reached the maximum number of activations for this license key.\n\n"
+            "To free up a slot, open RemoteX on another device and go to "
+            "Preferences → License → Deactivate, then try again here.\n\n"
+            "If you reinstalled your OS without deactivating first, "
+            "contact support at {email}."
+        ).format(email=SUPPORT_EMAIL),
+    )
+    dlg.add_response("ok", _("OK"))
+    dlg.present(parent)
 
 
 
