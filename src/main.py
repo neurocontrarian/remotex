@@ -4,6 +4,8 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
 
+APP_VERSION = "1.3.2"
+
 
 def _suppress_svg_icon_warnings(log_domain, log_level, message, user_data):
     """Drop 'Failed to load icon ... .svg' warnings — resolve_icon() handles fallback."""
@@ -133,7 +135,7 @@ class RemotexApplication(Adw.Application):
             application_name='RemoteX',
             application_icon='com.github.remotex.RemoteX',
             developer_name='neurocontrarian',
-            version='1.0.0',
+            version=APP_VERSION,
             comments=_("Visual command launcher for Linux — run local and SSH commands with one click."),
             license_type=Gtk.License.MIT_X11,
             developers=['neurocontrarian'],
