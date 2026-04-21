@@ -11,7 +11,7 @@
 | SSH machines | — | Unlimited |
 | Multi-machine buttons | — | ✓ |
 | Multi-select + group actions | — | ✓ |
-| Button themes (Cards, Neon, Retro…) | — | ✓ |
+| Button themes (Bold, Phone, Neon, Retro…) | — | ✓ |
 | Custom CSS theme | — | ✓ |
 | Config backup / restore | — | ✓ |
 

@@ -570,6 +570,76 @@ def show_preferences_dialog(parent, config=None):
         _update(0)
         page.add(group)
 
+    def _add_profiles_section():
+        if not is_pro_active() or not config:
+            return
+        _me = GLib.markup_escape_text
+        group = Adw.PreferencesGroup(title=_me(_("Execution Profiles")))
+        group.set_description(
+            _("Named execution contexts (user, working directory) assigned to buttons. "
+              "No passwords stored.")
+        )
+        manage_row = Adw.ActionRow(title=_me(_("Manage Profiles")))
+        manage_row.set_subtitle(_("Create, edit and delete execution profiles"))
+        manage_row.set_activatable(True)
+        manage_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        manage_row.connect("activated", lambda _: _on_manage_profiles())
+        group.add(manage_row)
+        export_row = Adw.ActionRow(title=_me(_("Export profiles")))
+        export_row.set_subtitle(_("Save profiles to a .rxprofiles file"))
+        export_row.set_activatable(True)
+        export_row.add_suffix(Gtk.Image.new_from_icon_name("document-save-symbolic"))
+        export_row.connect("activated", lambda _: _on_export_profiles())
+        group.add(export_row)
+        import_row = Adw.ActionRow(title=_me(_("Import profiles")))
+        import_row.set_subtitle(_("Restore profiles from a .rxprofiles file"))
+        import_row.set_activatable(True)
+        import_row.add_suffix(Gtk.Image.new_from_icon_name("document-open-symbolic"))
+        import_row.connect("activated", lambda _: _on_import_profiles())
+        group.add(import_row)
+        page.add(group)
+
+    def _on_manage_profiles():
+        from dialogs.profiles_list_dialog import show_profiles_list
+        show_profiles_list(parent, config)
+
+    def _on_export_profiles():
+        file_dialog = Gtk.FileDialog(title=_("Export profiles"))
+        f = Gtk.FileFilter()
+        f.set_name("RemoteX profiles (*.rxprofiles)")
+        f.add_pattern("*.rxprofiles")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(f)
+        file_dialog.set_filters(filters)
+        file_dialog.set_initial_name("remotex.rxprofiles")
+        def on_done(dlg, result):
+            try:
+                gfile = dlg.save_finish(result)
+                if gfile:
+                    config.export_profiles_backup(Path(gfile.get_path()))
+                    _show_toast(parent, _("Profiles exported"))
+            except Exception as e:
+                _show_toast(parent, _("Export failed: {error}").format(error=e))
+        file_dialog.save(parent, None, on_done)
+
+    def _on_import_profiles():
+        file_dialog = Gtk.FileDialog(title=_("Import profiles"))
+        f = Gtk.FileFilter()
+        f.set_name("RemoteX profiles (*.rxprofiles)")
+        f.add_pattern("*.rxprofiles")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(f)
+        file_dialog.set_filters(filters)
+        def on_done(dlg, result):
+            try:
+                gfile = dlg.open_finish(result)
+                if gfile:
+                    config.import_profiles_backup(Path(gfile.get_path()))
+                    _show_toast(parent, _("Profiles imported — restart to apply"))
+            except Exception as e:
+                _show_toast(parent, _("Import failed: {error}").format(error=e))
+        file_dialog.open(parent, None, on_done)
+
     def _add_backup_section():
         if not is_pro_active() or not config:
             return
@@ -620,6 +690,7 @@ def show_preferences_dialog(parent, config=None):
     _add_icon_dirs_section()
     _add_desktop_section()
     _add_mcp_setup_section()
+    _add_profiles_section()
     _add_backup_section()
 
     license_group = Adw.PreferencesGroup(title=_("License"))

@@ -91,7 +91,8 @@ TOOLS = [
                     "description": "Machine UUIDs to run on. Empty list = local. Use list_machines to get UUIDs.",
                 },
                 "execution_mode":     {"type": "string",  "description": "Output mode: 'silent' (toast only), 'output' (show dialog), 'terminal' (open terminal). Default: 'silent'."},
-                "run_as_user":        {"type": "string",  "description": "Run as a different user on remote (e.g. 'root'). Terminal + remote only."},
+                "run_as":             {"type": "string",  "description": "Privilege escalation: 'current' (no sudo, default), 'root' (sudo), or a username string (sudo -u username)."},
+                "sudo_password":      {"type": "string",  "description": "Sudo password stored encoded locally. Required for silent/output modes without NOPASSWD. Leave empty for terminal mode (interactive prompt)."},
             },
             "required": ["name", "command"],
             "additionalProperties": False,
@@ -121,7 +122,8 @@ TOOLS = [
                     "description": "Machine UUIDs to run on. Empty list = local only. Use list_machines to get UUIDs.",
                 },
                 "execution_mode":     {"type": "string",  "description": "Output mode: 'silent', 'output', or 'terminal'."},
-                "run_as_user":        {"type": "string",  "description": "Run as a different user on remote. Terminal + remote only."},
+                "run_as":             {"type": "string",  "description": "Privilege escalation: 'current', 'root', or a username string."},
+                "sudo_password":      {"type": "string",  "description": "Sudo password stored encoded locally."},
             },
             "required": ["id"],
             "additionalProperties": False,
@@ -158,6 +160,13 @@ TOOLS = [
 ]
 
 # ── Serialisation helpers ────────────────────────────────────────────────────
+
+def _resolve_run_as(value: str) -> str:
+    """Map MCP run_as value to run_as_user field: 'current'→'', 'root'→'root', else username."""
+    if not value or value == "current":
+        return ""
+    return value
+
 
 def _button_to_dict(b: CommandButton) -> dict:
     return {
@@ -247,9 +256,11 @@ def handle_create_button(args: dict) -> str:
         hide_label=         bool(args.get("hide_label", False)),
         hide_icon=          bool(args.get("hide_icon", False)),
         execution_mode=     args.get("execution_mode", ""),
-        run_as_user=        args.get("run_as_user", ""),
+        run_as_user=        _resolve_run_as(args.get("run_as", "current")),
         machine_ids=        machine_ids,
     )
+    if args.get("sudo_password"):
+        btn.set_sudo_password(args["sudo_password"])
     _config.add_button(btn)
     return json.dumps({"created": _button_to_dict(btn)}, ensure_ascii=False, indent=2)
 
@@ -263,9 +274,13 @@ def handle_update_button(args: dict) -> str:
     if btn is None:
         return f"Error: button not found: {bid}"
     for field in ("name", "command", "category", "tooltip", "icon_name", "color",
-                  "text_color", "execution_mode", "run_as_user"):
+                  "text_color", "execution_mode"):
         if field in args:
             setattr(btn, field, args[field])
+    if "run_as" in args:
+        btn.run_as_user = _resolve_run_as(args["run_as"])
+    if "sudo_password" in args:
+        btn.set_sudo_password(args["sudo_password"])
     for field in ("show_output", "confirm_before_run", "hide_label", "hide_icon"):
         if field in args:
             setattr(btn, field, bool(args[field]))
@@ -325,6 +340,23 @@ WORKFLOWS
    → "output"   — open an output dialog showing stdout/stderr.
    → "terminal" — open a terminal window (requires a terminal emulator installed).
    Default is "silent".
+
+6. Privilege escalation (sudo) for create_button / update_button:
+   → run_as="current"   — no sudo, run as the logged-in user (default).
+   → run_as="root"      — run as root via sudo (covers apt, systemctl, file ops in /etc…).
+   → run_as="www-data"  — run as a specific user via sudo -u (any username works).
+   When run_as is "root" or a username, you SHOULD also provide sudo_password so the
+   command runs without prompting. Omit sudo_password only if the system has NOPASSWD
+   configured, or if execution_mode is "terminal" (interactive prompt in the terminal).
+
+   DECOMPOSITION RULE — when given a shell command to add, strip context before storing:
+   → "cd /some/path" in the command → use an Execution Profile (working_dir field).
+   → "sudo apt update"              → command="apt update", run_as="root"
+   → "sudo -u www-data php art…"    → command="php artisan …", run_as="www-data"
+   → "sudo bash" or "sudo -i"       → command="bash", run_as="root", execution_mode="terminal"
+   → "sudo -u user bash -c 'cd /path && bash'" →
+       command="bash", run_as="user", execution_mode="terminal"
+       + tell user to set working_dir in an Execution Profile
 
 NOTES
 -----

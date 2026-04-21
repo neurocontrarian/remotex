@@ -246,14 +246,88 @@ class _CommandDialog:
         self._exec_mode_row.set_model(exec_mode_model)
         group.add(self._exec_mode_row)
 
-        self._run_as_user_row = Adw.EntryRow(title=_("Run as user"))
-        self._run_as_user_row.set_tooltip_text(
-            _("Terminal + remote machine only: execute the command as a different user\n"
-              "on the remote machine via sudo -u (e.g. deploy-user).\n"
-              "Leave empty to run as the SSH user.")
-        )
+        # --- Privileges ---
+        priv_model = Gtk.StringList()
+        self._priv_values = ["", "root", "__other__"]
+        for label in [_("Current user (no sudo)"), _("Root (sudo)"), _("Other user…")]:
+            priv_model.append(label)
+        self._priv_row = Adw.ComboRow(title=_("Run as"))
+        self._priv_row.set_model(priv_model)
+        self._priv_row.connect("notify::selected", self._on_priv_changed)
+        group.add(self._priv_row)
+
+        self._run_as_user_row = Adw.EntryRow(title=_("Username"))
+        self._run_as_user_row.set_tooltip_text(_("System user to run the command as (e.g. www-data, postgres)"))
+        self._run_as_user_row.set_visible(False)
         group.add(self._run_as_user_row)
+
+        self._sudo_pwd_row = Adw.PasswordEntryRow(title=_("Sudo password"))
+        self._sudo_pwd_row.set_show_apply_button(False)
+        self._sudo_pwd_row.set_tooltip_text(
+            _("Your sudo password — stored locally, encoded with a machine-specific key.\n"
+              "Leave empty to keep the existing password, or to be prompted each time.")
+        )
+        self._sudo_pwd_row.set_visible(False)
+        self._sudo_pwd_stored_row = Adw.ActionRow(
+            title=_("Password stored"),
+            subtitle=_("Leave the field empty to keep it, or type a new one to replace it."),
+        )
+        sudo_clear_btn = Gtk.Button(label=_("Clear"), valign=Gtk.Align.CENTER)
+        sudo_clear_btn.add_css_class("destructive-action")
+        sudo_clear_btn.connect("clicked", self._on_clear_sudo_pwd)
+        self._sudo_pwd_stored_row.add_suffix(sudo_clear_btn)
+        self._sudo_pwd_stored_row.set_visible(False)
+        group.add(self._sudo_pwd_row)
+        group.add(self._sudo_pwd_stored_row)
+
+        from pro.license import is_pro_active as _is_pro
+        _pro = _is_pro()
+        profiles = self._config.load_profiles() if _pro else []
+        profile_model = Gtk.StringList()
+        self._profile_id_values = [""]
+        profile_model.append(_("None (use button settings)"))
+        for p in profiles:
+            profile_model.append(p.name)
+            self._profile_id_values.append(p.id)
+        self._profile_row = Adw.ComboRow(title=_("Execution profile"))
+        self._profile_row.set_subtitle(
+            _("Apply a saved profile (user + directory) to this button")
+        )
+        self._profile_row.set_model(profile_model)
+        if not _pro:
+            self._profile_row.set_sensitive(False)
+            lock = Gtk.Image.new_from_icon_name("changes-prevent-symbolic")
+            lock.set_tooltip_text(_("Upgrade to Pro to use execution profiles"))
+            lock.add_css_class("dim-label")
+            self._profile_row.add_suffix(lock)
+        else:
+            self._profile_row.connect("notify::selected", self._on_profile_changed)
+        group.add(self._profile_row)
         return group
+
+    def _on_priv_changed(self, row, _param):
+        val = self._priv_values[row.get_selected()]
+        self._run_as_user_row.set_visible(val == "__other__")
+        has_sudo = val in ("root", "__other__")
+        self._sudo_pwd_row.set_visible(has_sudo)
+        # keep stored indicator visible only if there was already a password
+        if not has_sudo:
+            self._sudo_pwd_stored_row.set_visible(False)
+
+    def _on_clear_sudo_pwd(self, btn):
+        if self._button:
+            self._button.set_sudo_password("")
+        self._sudo_pwd_stored_row.set_visible(False)
+        self._sudo_pwd_row.set_text("")
+
+    def _on_profile_changed(self, row, _param):
+        has_profile = self._profile_id_values[row.get_selected()] != ""
+        for w in (self._priv_row, self._run_as_user_row,
+                  self._sudo_pwd_row, self._sudo_pwd_stored_row):
+            w.set_sensitive(not has_profile)
+        if has_profile:
+            self._sudo_pwd_row.set_visible(False)
+            self._sudo_pwd_stored_row.set_visible(False)
 
     def _populate_fields(self):
         if not self._button:
@@ -299,8 +373,24 @@ class _CommandDialog:
             mode = "output" if self._button.show_output else "silent"
         idx = self._exec_mode_values.index(mode) if mode in self._exec_mode_values else 0
         self._exec_mode_row.set_selected(idx)
-        if self._button.run_as_user:
-            self._run_as_user_row.set_text(self._button.run_as_user)
+        # Populate privileges dropdown
+        run_as = self._button.run_as_user
+        if run_as == "root":
+            self._priv_row.set_selected(1)
+        elif run_as:
+            self._priv_row.set_selected(2)
+            self._run_as_user_row.set_text(run_as)
+        # else stays at 0 (current user)
+        self._on_priv_changed(self._priv_row, None)
+        if self._button.sudo_password_encoded:
+            self._sudo_pwd_stored_row.set_visible(True)
+        if hasattr(self, '_profile_id_values') and self._button.profile_id:
+            try:
+                idx = self._profile_id_values.index(self._button.profile_id)
+                self._profile_row.set_selected(idx)
+                self._on_profile_changed(self._profile_row, None)
+            except ValueError:
+                pass
 
     # ── Color picker ─────────────────────────────────────────────────────
 
@@ -614,11 +704,19 @@ class _CommandDialog:
             self._button.confirm_before_run = self._confirm_row.get_active()
             self._button.execution_mode = self._exec_mode_values[self._exec_mode_row.get_selected()]
             self._button.show_output = (self._button.execution_mode == "output")
-            self._button.run_as_user = self._run_as_user_row.get_text().strip()
+            self._button.run_as_user = self._resolve_run_as_user()
+            self._button.profile_id = self._profile_id_values[
+                self._profile_row.get_selected()
+            ] if hasattr(self, '_profile_id_values') else ""
+            pwd = self._sudo_pwd_row.get_text()
+            if pwd:
+                self._button.set_sudo_password(pwd)
+            elif not self._button.sudo_password_encoded:
+                self._button.set_sudo_password("")
             return self._button
         else:
             exec_mode = self._exec_mode_values[self._exec_mode_row.get_selected()]
-            return CommandButton(
+            btn = CommandButton(
                 name=name,
                 command=command,
                 machine_ids=machine_ids,
@@ -632,8 +730,23 @@ class _CommandDialog:
                 confirm_before_run=self._confirm_row.get_active(),
                 execution_mode=exec_mode,
                 show_output=(exec_mode == "output"),
-                run_as_user=self._run_as_user_row.get_text().strip(),
+                run_as_user=self._resolve_run_as_user(),
+                profile_id=self._profile_id_values[
+                    self._profile_row.get_selected()
+                ] if hasattr(self, '_profile_id_values') else "",
             )
+            pwd = self._sudo_pwd_row.get_text()
+            if pwd:
+                btn.set_sudo_password(pwd)
+            return btn
+
+    def _resolve_run_as_user(self) -> str:
+        val = self._priv_values[self._priv_row.get_selected()]
+        if val == "root":
+            return "root"
+        if val == "__other__":
+            return self._run_as_user_row.get_text().strip()
+        return ""
 
     def _on_save(self, btn):
         button = self._build_button_from_fields()

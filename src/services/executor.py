@@ -10,16 +10,20 @@ from models.config import ConfigManager
 from models.machine import Machine
 from utils.threading import run_in_thread
 
-# Terminal emulators tried in order. Each entry: [binary, separator_flag].
-# The command built is: binary separator_flag bash -c "cmd"
+_TERM_COLS = 60
+_TERM_ROWS = 18
+_TERM_GEO = f"{_TERM_COLS}x{_TERM_ROWS}"
+
+# Terminal emulators tried in order.
+# Format: all args that come BEFORE ["bash", "-c", cmd].
 _TERMINAL_CANDIDATES = [
-    ["xterm", "-e"],
-    ["gnome-terminal", "--"],
+    ["xterm", "-fa", "Monospace", "-fs", "13", "-geometry", _TERM_GEO, "-e"],
+    ["gnome-terminal", f"--geometry={_TERM_GEO}", "--"],
     ["konsole", "-e"],
-    ["xfce4-terminal", "-e"],
-    ["mate-terminal", "-e"],
+    ["xfce4-terminal", f"--geometry={_TERM_GEO}", "-e"],
+    ["mate-terminal", f"--geometry={_TERM_GEO}", "-e"],
     ["tilix", "-e"],
-    ["terminator", "-e"],
+    ["terminator", f"--geometry={_TERM_GEO}", "-e"],
     ["alacritty", "-e"],
     ["kitty"],
 ]
@@ -57,6 +61,24 @@ class CommandExecutor:
         except Exception:
             return 30
 
+    def _resolve_profile(self, button: CommandButton):
+        """Return (run_as_user, working_dir) from assigned profile or button fields."""
+        if button.profile_id:
+            profile = self._config.get_profile_by_id(button.profile_id)
+            if profile:
+                return profile.run_as_user, profile.working_dir
+        return button.run_as_user, ""
+
+    def _get_sudo_password(self, button: CommandButton) -> str:
+        pwd = button.get_sudo_password()
+        if pwd:
+            return pwd
+        if button.profile_id:
+            profile = self._config.get_profile_by_id(button.profile_id)
+            if profile:
+                return profile.get_sudo_password()
+        return ""
+
     def execute(self, button: CommandButton, callback: Callable[[ExecutionResult], None],
                 machine_id: str | None = None):
         """Dispatch command execution to a background thread.
@@ -66,6 +88,9 @@ class CommandExecutor:
                     ""   = explicit local execution.
         """
         resolved_id = self._resolve_machine_id(button, machine_id)
+        run_as_user, working_dir = self._resolve_profile(button)
+
+        sudo_password = self._get_sudo_password(button) if run_as_user else ""
 
         if button.execution_mode == "terminal":
             if resolved_id:
@@ -73,9 +98,14 @@ class CommandExecutor:
                 if machine is None:
                     callback(self._machine_not_found(resolved_id, button.id))
                     return
-                terminal_cmd = self._build_ssh_command(machine, button.command, button.run_as_user)
+                terminal_cmd = self._build_ssh_command(
+                    machine, button.command, run_as_user, working_dir,
+                    sudo_password=sudo_password,
+                )
             else:
-                terminal_cmd = button.command
+                terminal_cmd = self._build_local_terminal_command(
+                    button.command, run_as_user, working_dir, sudo_password=sudo_password
+                )
             run_in_thread(self._run_in_terminal, callback, terminal_cmd, button.id)
             return
 
@@ -84,25 +114,40 @@ class CommandExecutor:
             if machine is None:
                 callback(self._machine_not_found(resolved_id, button.id))
                 return
-            run_in_thread(self._run_remote, callback, button.command, machine, button.id)
+            run_in_thread(self._run_remote, callback, button.command, machine, button.id,
+                          run_as_user, working_dir, sudo_password)
         else:
-            run_in_thread(self._run_local, callback, button.command, button.id)
+            run_in_thread(self._run_local, callback, button.command, button.id,
+                          run_as_user, working_dir, sudo_password)
 
     def test_connection(self, machine: Machine, callback: Callable[[bool, str], None]):
         """Test SSH connectivity in a background thread."""
         ssh = self._get_ssh()
         run_in_thread(ssh.test_connection, lambda result: callback(*result), machine)
 
-    def _run_local(self, command: str, button_id: str = "") -> ExecutionResult:
+    def _run_local(self, command: str, button_id: str = "",
+                   run_as_user: str = "", working_dir: str = "",
+                   sudo_password: str = "") -> ExecutionResult:
         timeout = self._get_timeout()
         start = time.monotonic()
         try:
+            effective_cmd = command
+            stdin_input = None
+            if run_as_user:
+                if sudo_password:
+                    effective_cmd = f"sudo -S -p '' -u {shlex.quote(run_as_user)} bash -c {shlex.quote(command)}"
+                    stdin_input = sudo_password + "\n"
+                else:
+                    effective_cmd = f"sudo -u {shlex.quote(run_as_user)} bash -c {shlex.quote(command)}"
+            cwd = working_dir if working_dir else None
             proc = subprocess.run(
-                command,
+                effective_cmd,
                 shell=True,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
+                cwd=cwd,
+                input=stdin_input,
             )
             return ExecutionResult(
                 success=(proc.returncode == 0),
@@ -126,7 +171,9 @@ class CommandExecutor:
                 button_id=button_id,
             )
 
-    def _build_ssh_command(self, machine: Machine, command: str, run_as_user: str = "") -> str:
+    def _build_ssh_command(self, machine: Machine, command: str,
+                           run_as_user: str = "", working_dir: str = "",
+                           sudo_password: str = "") -> str:
         """Build an ssh -t command string for use inside bash -c."""
         args = ["ssh", "-t"]
         if machine.port != 22:
@@ -135,14 +182,33 @@ class CommandExecutor:
             args += ["-i", machine.identity_file]
         args.append(f"{machine.user}@{machine.host}")
 
+        base_cmd = f"cd {shlex.quote(working_dir)} && {command}" if working_dir else command
         if run_as_user:
-            remote_cmd = f"sudo -u {shlex.quote(run_as_user)} bash -c {shlex.quote(command)}"
+            inner = f"exec < /dev/tty; {base_cmd}"
+            if sudo_password:
+                remote_cmd = (f"sudo -S -p '' -u {shlex.quote(run_as_user)} bash -c "
+                              f"{shlex.quote(inner)} <<< {shlex.quote(sudo_password)}")
+            else:
+                remote_cmd = f"sudo -u {shlex.quote(run_as_user)} bash -c {shlex.quote(inner)}"
         else:
-            remote_cmd = command
+            remote_cmd = base_cmd
 
         args.append(remote_cmd)
-        # Join as a shell-safe string — will be passed to local bash -c
         return " ".join(shlex.quote(a) for a in args)
+
+    def _build_local_terminal_command(self, command: str,
+                                      run_as_user: str = "",
+                                      working_dir: str = "",
+                                      sudo_password: str = "") -> str:
+        base_cmd = f"cd {shlex.quote(working_dir)} && {command}" if working_dir else command
+        if run_as_user:
+            # exec < /dev/tty restores terminal stdin after sudo -S consumes the here-string.
+            inner = f"exec < /dev/tty; {base_cmd}"
+            if sudo_password:
+                return (f"sudo -S -p '' -u {shlex.quote(run_as_user)} bash -c "
+                        f"{shlex.quote(inner)} <<< {shlex.quote(sudo_password)}")
+            return f"sudo -u {shlex.quote(run_as_user)} bash -c {shlex.quote(inner)}"
+        return base_cmd
 
     def _run_in_terminal(self, command: str, button_id: str = "") -> ExecutionResult:
         """Open the command in a new terminal window (keeps the window open after exit)."""
@@ -175,8 +241,19 @@ class CommandExecutor:
                 duration_ms=0, button_id=button_id,
             )
 
-    def _run_remote(self, command: str, machine: Machine, button_id: str = "") -> ExecutionResult:
-        return self._get_ssh().run_command(machine, command, button_id)
+    def _run_remote(self, command: str, machine: Machine, button_id: str = "",
+                    run_as_user: str = "", working_dir: str = "",
+                    sudo_password: str = "") -> ExecutionResult:
+        base = f"cd {shlex.quote(working_dir)} && {command}" if working_dir else command
+        if run_as_user:
+            if sudo_password:
+                effective = (f"printf '%s\\n' {shlex.quote(sudo_password)} | "
+                             f"sudo -S -p '' -u {shlex.quote(run_as_user)} bash -c {shlex.quote(base)}")
+            else:
+                effective = f"sudo -u {shlex.quote(run_as_user)} bash -c {shlex.quote(base)}"
+        else:
+            effective = base
+        return self._get_ssh().run_command(machine, effective, button_id)
 
     def _resolve_machine_id(self, button: CommandButton, override: str | None) -> str:
         if override is not None:

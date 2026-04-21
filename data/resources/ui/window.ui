@@ -123,6 +123,10 @@
         <attribute name="action">app.manage-machines</attribute>
       </item>
       <item>
+        <attribute name="label" translatable="yes">Manage Profiles</attribute>
+        <attribute name="action">app.manage-profiles</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">Preferences</attribute>
         <attribute name="action">app.preferences</attribute>
       </item>

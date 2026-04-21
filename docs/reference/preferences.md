@@ -73,7 +73,6 @@ Applies a visual style to all button tiles. See [Themes](../pro/themes.md) for a
 | Theme | Style |
 |-------|-------|
 | Bold | Solid colored tiles with strong contrast (default) |
-| Cards | Elevated card style with subtle shadows |
 | Phone | Compact flat tiles, reminiscent of a dial pad |
 | Neon | Dark background with glowing accent borders |
 | Retro | Terminal-inspired monochrome with scanlines |

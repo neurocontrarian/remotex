@@ -15,12 +15,6 @@ Tuiles colorées pleines avec un fort contraste. C'est le thème système par d�
 
 ![Thème Gras](../assets/theme-bold.png)
 
-### Cards
-
-Style de carte surélevée avec des ombres portées subtiles. Les tuiles semblent légèrement soulevées au-dessus du fond de la grille. Un bon choix si vous préférez une mise en page en couches avec de la profondeur.
-
-![Thème Cards](../assets/theme-cards.png)
-
 ### Phone
 
 Tuiles plates compactes avec un rembourrage minimal, évoquant un clavier de téléphone ou de calculatrice. Fonctionne mieux avec une taille de bouton petite ou moyenne et un nombre de colonnes plus élevé.

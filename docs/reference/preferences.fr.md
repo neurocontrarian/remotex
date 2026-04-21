@@ -73,7 +73,6 @@ Applique un style visuel à toutes les tuiles de boutons. Consultez [Thèmes](..
 | Thème | Style |
 |-------|-------|
 | Gras | Tuiles colorées pleines avec un fort contraste (par défaut) |
-| Cards | Style de carte surélevée avec des ombres subtiles |
 | Phone | Tuiles plates compactes, évoquant un clavier de téléphone |
 | Neon | Fond sombre avec des bordures lumineuses de la couleur d'accent |
 | Retro | Style monochrome inspiré du terminal avec des lignes de balayage |

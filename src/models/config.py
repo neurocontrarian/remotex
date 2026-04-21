@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .machine import Machine
 from .command_button import CommandButton
+from .execution_profile import ExecutionProfile
 from ._default_buttons import get_default_buttons
 
 CONFIG_VERSION = 1
@@ -16,13 +17,14 @@ class ConfigManager:
     CONFIG_DIR = Path.home() / '.config' / 'remotex'
     MACHINES_FILE = CONFIG_DIR / 'machines.toml'
     BUTTONS_FILE = CONFIG_DIR / 'buttons.toml'
+    PROFILES_FILE = CONFIG_DIR / 'profiles.toml'
 
     def __init__(self):
         self._ensure_config_dir()
 
     def _ensure_config_dir(self):
         self.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        for f in (self.MACHINES_FILE, self.BUTTONS_FILE):
+        for f in (self.MACHINES_FILE, self.BUTTONS_FILE, self.PROFILES_FILE):
             if f.exists():
                 try:
                     os.chmod(f, 0o600)
@@ -59,6 +61,39 @@ class ConfigManager:
     def delete_machine(self, machine_id: str) -> None:
         machines = self.load_machines()
         self.save_machines([m for m in machines if m.id != machine_id])
+
+    # --- Profiles ---
+
+    def load_profiles(self) -> list[ExecutionProfile]:
+        if not self.PROFILES_FILE.exists():
+            return []
+        with open(self.PROFILES_FILE, 'rb') as f:
+            data = tomllib.load(f)
+        return [ExecutionProfile.from_dict(p) for p in data.get('profile', [])]
+
+    def save_profiles(self, profiles: list[ExecutionProfile]) -> None:
+        data = {
+            'version': CONFIG_VERSION,
+            'profile': [p.to_dict() for p in profiles],
+        }
+        self._atomic_write(self.PROFILES_FILE, data)
+
+    def add_profile(self, profile: ExecutionProfile) -> None:
+        profiles = self.load_profiles()
+        profiles.append(profile)
+        self.save_profiles(profiles)
+
+    def update_profile(self, profile: ExecutionProfile) -> None:
+        profiles = self.load_profiles()
+        profiles = [p if p.id != profile.id else profile for p in profiles]
+        self.save_profiles(profiles)
+
+    def delete_profile(self, profile_id: str) -> None:
+        profiles = self.load_profiles()
+        self.save_profiles([p for p in profiles if p.id != profile_id])
+
+    def get_profile_by_id(self, profile_id: str) -> ExecutionProfile | None:
+        return next((p for p in self.load_profiles() if p.id == profile_id), None)
 
     # --- Buttons ---
 
@@ -184,6 +219,18 @@ class ConfigManager:
         with zipfile.ZipFile(src_path, 'r') as zf:
             if 'machines.toml' in zf.namelist():
                 self._safe_extract(zf, 'machines.toml', self.CONFIG_DIR)
+
+    def export_profiles_backup(self, dest_path: Path) -> None:
+        """Write a .rxprofiles zip archive (profiles.toml only)."""
+        with zipfile.ZipFile(dest_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+            if self.PROFILES_FILE.exists():
+                zf.write(self.PROFILES_FILE, self.PROFILES_FILE.name)
+
+    def import_profiles_backup(self, src_path: Path) -> None:
+        """Restore profiles from a .rxprofiles zip archive."""
+        with zipfile.ZipFile(src_path, 'r') as zf:
+            if 'profiles.toml' in zf.namelist():
+                self._safe_extract(zf, 'profiles.toml', self.CONFIG_DIR)
 
     def import_backup(self, src_path: Path, settings=None) -> None:
         """Restore config from a .remotex-backup zip archive.

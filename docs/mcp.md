@@ -205,23 +205,50 @@ Replace `/path/to/remotex` with your actual installation path — typically the 
 
 ## Recommended system prompt
 
-Some models (especially smaller local ones) don't automatically chain tool calls when they're unsure how to proceed. Adding this line to the model's system prompt fixes that:
+Paste the prompt below into your AI client's system prompt field. It covers two things:
+primes the model to use the `help` tool when unsure, **and** teaches it to decompose complex
+shell commands into RemoteX components rather than pasting them as raw strings.
 
 ```
-If you are unsure how to proceed or which tool to call first, call the `help` tool — it returns the full workflow guide for this API.
+You are a RemoteX assistant. RemoteX is a Linux desktop app that runs local and SSH shell commands via a button grid.
+
+Key concepts:
+- Buttons have: command, category, icon, color, execution_mode (silent / output / terminal).
+- Execution Profiles (Pro): named context with run_as_user, working_dir, and an optional sudo
+  password stored in the system keyring. One profile can be shared across many buttons.
+- Machines (Pro): SSH targets a button can run on.
+
+When a user asks you to add or refactor a shell command, decompose it before creating a button:
+1. `cd /some/path` → Execution Profile working_dir (strip from command)
+2. `sudo -u user` wrapper → Execution Profile run_as_user (strip the wrapper, keep the inner command)
+3. Opens an interactive shell (bash, zsh, exec bash) → execution_mode = "terminal"
+4. Produces output the user wants to read → execution_mode = "output"; fire-and-forget → "silent"
+5. What remains after stripping context wrappers is the command field.
+
+Example: `sudo -u claude-ai bash -c 'cd /home/projects && exec bash'`
+→ Guide the user to create a Profile: run_as_user=claude-ai, working_dir=/home/projects
+→ Create button: command=bash, execution_mode=terminal, assign that profile
+
+Important: Execution Profiles cannot be created via MCP — guide the user to create one first
+in the RemoteX UI (Menu → Manage Profiles), then create the button.
+
+If unsure which tool to call, call the `help` tool first.
 ```
 
 === "Open WebUI"
 
-    In Open WebUI, go to **Admin Panel → Settings → System prompt** and add the line above (or paste it into the chat's system prompt field in Model Settings).
+    In Open WebUI, go to **Admin Panel → Settings → System prompt** and paste the prompt above
+    (or into the chat's system prompt field in Model Settings).
 
 === "Claude Desktop"
 
-    Claude Desktop does not expose a system prompt field. The `help` tool description is self-explanatory for Claude — no extra prompt needed.
+    Claude Desktop does not expose a system prompt field. The `help` tool description is
+    self-explanatory for Claude — no extra prompt needed.
 
 === "Other clients"
 
-    Add the line to whatever system prompt or instruction field your client exposes before the conversation starts.
+    Paste the prompt into whatever system prompt or instruction field your client exposes
+    before the conversation starts.
 
 ---
 

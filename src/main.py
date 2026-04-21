@@ -4,7 +4,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
 
-APP_VERSION = "1.3.7"
+APP_VERSION = "1.3.8"
 
 
 def _suppress_svg_icon_warnings(log_domain, log_level, message, user_data):
@@ -71,9 +71,38 @@ class RemotexApplication(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
+        self._migrate_settings()
         self._load_language()
         self._setup_actions()
         self._schedule_license_revalidation()
+
+    def _migrate_settings(self):
+        """Apply one-time migrations when schema defaults change across versions.
+
+        HOW TO ADD A MIGRATION:
+          1. Increment CURRENT_VERSION below.
+          2. Add an `if v < N:` block with the reset/set calls.
+          3. Document the change in CLAUDE.md under GSettings migrations.
+        Never change a schema <default> without adding a migration here.
+        """
+        CURRENT_VERSION = 1
+        try:
+            s = Gio.Settings.new('com.github.remotex.RemoteX')
+            v = s.get_int('settings-version')
+
+            if v < 1:
+                # confirm-before-run default changed false → true.
+                # Reset users who inherited the old false default without
+                # explicitly choosing it (best-effort: indistinguishable from
+                # an intentional false, but the schema intent is true).
+                user_val = s.get_user_value('confirm-before-run')
+                if user_val is not None and not user_val.get_boolean():
+                    s.reset('confirm-before-run')
+
+            if v < CURRENT_VERSION:
+                s.set_int('settings-version', CURRENT_VERSION)
+        except Exception:
+            pass
 
     def _schedule_license_revalidation(self):
         """Re-check the stored license with LemonSqueezy in a background thread."""
@@ -98,6 +127,10 @@ class RemotexApplication(Adw.Application):
         manage_machines_action = Gio.SimpleAction.new('manage-machines', None)
         manage_machines_action.connect('activate', self._on_manage_machines)
         self.add_action(manage_machines_action)
+
+        manage_profiles_action = Gio.SimpleAction.new('manage-profiles', None)
+        manage_profiles_action.connect('activate', self._on_manage_profiles)
+        self.add_action(manage_profiles_action)
 
         preferences_action = Gio.SimpleAction.new('preferences', None)
         preferences_action.connect('activate', self._on_preferences)
@@ -142,7 +175,7 @@ class RemotexApplication(Adw.Application):
 
     def _on_about(self, action, param):
         from i18n import _
-        about = Adw.AboutDialog(
+        about = Adw.AboutWindow(
             application_name='RemoteX',
             application_icon='com.github.remotex.RemoteX',
             developer_name='neurocontrarian',
@@ -151,9 +184,11 @@ class RemotexApplication(Adw.Application):
             license_type=Gtk.License.MIT_X11,
             developers=['neurocontrarian'],
             website='https://github.com/neurocontrarian/remotex',
+            transient_for=self.props.active_window,
+            modal=True,
         )
         about.add_link(_("Report an Issue"), 'https://github.com/neurocontrarian/remotex/issues')
-        about.present(self.props.active_window)
+        about.present()
 
     def _on_manage_machines(self, action, param):
         from pro.license import is_pro_active
@@ -168,6 +203,21 @@ class RemotexApplication(Adw.Application):
             )
             return
         win.show_machines_dialog()
+
+    def _on_manage_profiles(self, action, param):
+        from pro.license import is_pro_active
+        win = self.props.active_window
+        if not win:
+            return
+        if not is_pro_active():
+            win._show_pro_limit_dialog(
+                _("Pro feature"),
+                _("Execution Profiles require RemoteX Pro.\n"
+                  "Upgrade to use named execution contexts on your buttons."),
+            )
+            return
+        from dialogs.profiles_list_dialog import show_profiles_list
+        show_profiles_list(win, win._config)
 
     def _on_preferences(self, action, param):
         win = self.props.active_window

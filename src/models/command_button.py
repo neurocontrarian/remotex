@@ -20,7 +20,22 @@ class CommandButton:
     text_color: str = ""                               # Hex color for label text, empty = theme default
     is_default: bool = False                           # True = seeded button, not editable in free tier
     execution_mode: str = ""                           # "": legacy (use show_output); "silent"; "output"; "terminal"
-    run_as_user: str = ""                              # Terminal+remote only: sudo -u USER on the remote machine
+    run_as_user: str = ""                              # sudo -u USER; "root" = sudo without -u; "" = current user
+    profile_id: str = ""                               # UUID of ExecutionProfile, "" = none
+    sudo_password_encoded: str = ""                    # machine-id XOR encoded sudo password
+
+    def get_sudo_password(self) -> str:
+        if not self.sudo_password_encoded:
+            return ""
+        from services.password_store import decode
+        return decode(self.sudo_password_encoded)
+
+    def set_sudo_password(self, password: str) -> None:
+        if password:
+            from services.password_store import encode
+            self.sudo_password_encoded = encode(password)
+        else:
+            self.sudo_password_encoded = ""
 
     def to_dict(self) -> dict:
         return {
@@ -34,6 +49,8 @@ class CommandButton:
             'show_output': self.show_output,
             'execution_mode': self.execution_mode,
             'run_as_user': self.run_as_user,
+            'sudo_password_encoded': self.sudo_password_encoded,
+            'profile_id': self.profile_id,
             'position': self.position,
             'category': self.category,
             'tooltip': self.tooltip,
@@ -62,6 +79,8 @@ class CommandButton:
             show_output=data.get('show_output', False),
             execution_mode=data.get('execution_mode', ''),
             run_as_user=data.get('run_as_user', ''),
+            sudo_password_encoded=data.get('sudo_password_encoded', ''),
+            profile_id=data.get('profile_id', ''),
             position=data.get('position', 0),
             category=data.get('category', ''),
             tooltip=data.get('tooltip', ''),

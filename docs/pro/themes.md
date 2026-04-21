@@ -15,12 +15,6 @@ Solid colored tiles with strong contrast. This is the system default — tiles u
 
 ![Bold theme](../assets/theme-bold.png)
 
-### Cards
-
-Elevated card style with subtle drop shadows. Tiles look slightly raised above the grid background. A good choice if you prefer a layered, depth-based layout.
-
-![Cards theme](../assets/theme-cards.png)
-
 ### Phone
 
 Compact flat tiles with minimal padding, reminiscent of a phone dialer or calculator. Works best with small or medium button size and a higher column count.

@@ -66,6 +66,10 @@
       <default>'system'</default>
       <summary>Interface language code (system, en, fr, de, es, it, ja, zh, ko, ru, ar, hi, pt)</summary>
     </key>
+    <key name="settings-version" type="i">
+      <default>0</default>
+      <summary>Internal schema version — incremented when a migration is applied in do_startup</summary>
+    </key>
     <key name="color-scheme" type="s">
       <choices>
         <choice value="system"/>
