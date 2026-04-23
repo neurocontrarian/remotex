@@ -13,6 +13,7 @@
 | Multi-select + group actions | — | ✓ |
 | Button themes (Bold, Phone, Neon, Retro…) | — | ✓ |
 | Custom CSS theme | — | ✓ |
+| Execution profiles | — | ✓ |
 | Config backup / restore | — | ✓ |
 
 !!! note
@@ -45,6 +46,18 @@ Renew from **Preferences → License → Renew license**.
 ## Deactivating
 
 To remove the license from a device: **Preferences → License → Deactivate license**.
+
+## Execution profiles *(Pro)*
+
+Create reusable execution contexts that combine a target user, a working directory, and a sudo password into a single named profile.
+
+Assign a profile to any button — when it runs, the command executes as the specified user in the specified directory, with the sudo password fed automatically (no terminal prompt).
+
+Profiles work for both local and remote (SSH) execution, including **Open in terminal** mode.
+
+Manage profiles from the hamburger menu → **Manage Profiles**.
+
+---
 
 ## Backup and restore *(Pro)*
 

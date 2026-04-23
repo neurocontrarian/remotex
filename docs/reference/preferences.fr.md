@@ -121,6 +121,22 @@ La liste se met à jour automatiquement lorsque vous ajoutez ou supprimez des ca
 
 ---
 
+## Profils d'exécution *(Pro)*
+
+Gérez les contextes d'exécution nommés depuis le menu hamburger → **Gérer les profils** (accessible aussi depuis cette section). Chaque profil regroupe :
+
+- **Nom du profil** — un libellé court et descriptif (par ex. `En tant que www-data dans /var/www`)
+- **Exécuter en tant que** — l'utilisateur cible : utilisateur courant (sans sudo), root, ou un nom d'utilisateur personnalisé
+- **Répertoire de travail** — le répertoire dans lequel effectuer un `cd` avant d'exécuter la commande
+- **Mot de passe sudo** — stocké localement avec un encodage propre à la machine ; transmis automatiquement à `sudo -S` à l'exécution, sans invite dans le terminal
+
+Assignez un profil à un bouton dans l'[Éditeur de bouton](button-editor.md#profil-dexécution) pour appliquer ses paramètres.
+
+!!! tip "Fonctionnalité Pro"
+    Les profils d'exécution nécessitent [RemoteX Pro](../pro.md).
+
+---
+
 ## Licence
 
 Gère votre licence RemoteX Pro.

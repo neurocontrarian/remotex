@@ -33,6 +33,7 @@ Active le mode de sélection multiple. Dans ce mode, cliquer sur un bouton bascu
 Ouvre le menu de l'application :
 
 - **Gérer les machines** — ouvre la liste des machines (Pro uniquement)
+- **Gérer les profils** — ouvre la liste des profils d'exécution (Pro uniquement)
 - **Toujours au premier plan** — bascule si la fenêtre flotte au-dessus de toutes les autres fenêtres (option à bascule avec état, cochée lorsqu'active)
 - **Préférences** — ouvre la boîte de dialogue des préférences (`Ctrl+,`)
 - **Raccourcis clavier** — affiche tous les raccourcis (`Ctrl+?`)

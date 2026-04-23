@@ -13,6 +13,7 @@
 | Sélection multiple + actions de groupe | — | ✓ |
 | Thèmes de boutons (Bold, Phone, Neon, Retro…) | — | ✓ |
 | Thème CSS personnalisé | — | ✓ |
+| Profils d'exécution | — | ✓ |
 | Sauvegarde / restauration de la config | — | ✓ |
 
 !!! note
@@ -45,6 +46,18 @@ Renouvelez depuis **Préférences → Licence → Renouveler la licence**.
 ## Désactivation
 
 Pour retirer la licence d'un appareil : **Préférences → Licence → Désactiver la licence**.
+
+## Profils d'exécution *(Pro)*
+
+Créez des contextes d'exécution réutilisables combinant un utilisateur cible, un répertoire de travail et un mot de passe sudo dans un seul profil nommé.
+
+Assignez un profil à n'importe quel bouton — lors de l'exécution, la commande s'exécute sous l'utilisateur spécifié dans le répertoire spécifié, avec le mot de passe sudo transmis automatiquement (aucune invite dans le terminal).
+
+Les profils fonctionnent en exécution locale et distante (SSH), y compris en mode **Ouvrir dans le terminal**.
+
+Gérez les profils depuis le menu hamburger → **Gérer les profils**.
+
+---
 
 ## Sauvegarde et restauration *(Pro)*
 

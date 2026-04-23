@@ -128,9 +128,25 @@ Controls what happens after the command runs.
 
     Use **Open in terminal** for interactive programs: `htop`, `vim`, `python3`, `ssh` sessions, etc.
 
+### Execution profile
+
+!!! tip "Pro feature"
+    Execution profiles require [RemoteX Pro](../pro.md).
+
+Assigns a saved [execution profile](../pro.md#execution-profiles-pro) to this button. A profile bundles a target user, a working directory, and a sudo password into a single reusable entry.
+
+When a profile is selected, the **Run as user** and **Working directory** fields on the button are overridden by the profile — those controls are greyed out automatically.
+
+Select **None** to use the button's own fields instead.
+
 ### Run as user
 
-Only active when **Execution mode** is **Open in terminal**. Fill this field with a username (e.g. `www-data`, `postgres`) to prepend `sudo -u <user>` to the command. Useful for commands that must run under a specific service account.
+Runs the command as a different user via `sudo -u <user>`. Fill this field with a system username (e.g. `www-data`, `postgres`).
+
+Ignored when an execution profile is assigned (the profile's user takes precedence).
+
+!!! note
+    To run as a specific user *and* have the sudo password provided automatically, use an **Execution profile** — it stores the password securely and passes it without prompting.
 
 ---
 

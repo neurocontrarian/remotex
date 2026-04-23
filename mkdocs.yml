@@ -66,6 +66,10 @@ nav:
     - Backup & Restore: pro/backup.md
     - License & Devices: pro/license-devices.md
   - AI Integration (MCP): mcp.md
+  - Legal:
+    - Terms of Service: legal/terms.md
+    - Privacy Policy: legal/privacy.md
+    - Refund Policy: legal/refund.md
 
 markdown_extensions:
   - attr_list
@@ -75,4 +79,8 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/neurocontrarian/remotex
 
-copyright: Copyright &copy; 2025 neurocontrarian
+copyright: >-
+  Copyright &copy; 2026 neurocontrarian &mdash;
+  <a href="/remotex/legal/terms/">Terms</a> &middot;
+  <a href="/remotex/legal/privacy/">Privacy</a> &middot;
+  <a href="/remotex/legal/refund/">Refunds</a>

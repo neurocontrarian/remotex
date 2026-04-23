@@ -128,9 +128,25 @@ Contrôle ce qui se passe après l'exécution de la commande.
 
     Utilisez **Ouvrir dans le terminal** pour les programmes interactifs : `htop`, `vim`, `python3`, sessions `ssh`, etc.
 
+### Profil d'exécution
+
+!!! tip "Fonctionnalité Pro"
+    Les profils d'exécution nécessitent [RemoteX Pro](../pro.md).
+
+Assigne un [profil d'exécution](../pro.md#profils-dexécution-pro) enregistré à ce bouton. Un profil regroupe un utilisateur cible, un répertoire de travail et un mot de passe sudo dans une entrée réutilisable.
+
+Lorsqu'un profil est sélectionné, les champs **Exécuter en tant qu'utilisateur** et **Répertoire de travail** du bouton sont remplacés par ceux du profil — ces contrôles sont automatiquement grisés.
+
+Sélectionnez **Aucun** pour utiliser les champs propres au bouton.
+
 ### Exécuter en tant qu'utilisateur
 
-Actif uniquement lorsque le **Mode d'exécution** est **Ouvrir dans le terminal**. Renseignez ce champ avec un nom d'utilisateur (par ex. `www-data`, `postgres`) pour faire précéder la commande de `sudo -u <utilisateur>`. Utile pour les commandes devant s'exécuter sous un compte de service spécifique.
+Exécute la commande sous un autre utilisateur via `sudo -u <utilisateur>`. Renseignez ce champ avec un nom d'utilisateur système (par ex. `www-data`, `postgres`).
+
+Ignoré lorsqu'un profil d'exécution est assigné (l'utilisateur du profil a la priorité).
+
+!!! note
+    Pour exécuter sous un utilisateur spécifique *et* fournir le mot de passe sudo automatiquement, utilisez un **Profil d'exécution** — il stocke le mot de passe de façon sécurisée et le transmet sans invite.
 
 ---
 

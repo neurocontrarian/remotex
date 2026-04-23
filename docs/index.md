@@ -35,4 +35,5 @@
 | Multi-select + group actions | [Pro](pro.md) |
 | Button themes | [Pro](pro.md) |
 | Config backup / restore | [Pro](pro.md) |
+| Execution profiles (run-as-user + sudo password) | [Pro](pro.md) |
 | MCP server (AI assistant integration) | Free |

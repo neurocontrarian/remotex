@@ -33,6 +33,7 @@ Enters multi-select mode. In this mode, clicking a button toggles its selection 
 Opens the application menu:
 
 - **Manage Machines** — opens the machine list dialog (Pro only)
+- **Manage Profiles** — opens the execution profile list dialog (Pro only)
 - **Always on top** — toggles whether the window floats above all other windows (stateful toggle, checked when active)
 - **Preferences** — opens the preferences dialog (`Ctrl+,`)
 - **Keyboard shortcuts** — shows all shortcuts (`Ctrl+?`)

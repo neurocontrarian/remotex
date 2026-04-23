@@ -121,6 +121,22 @@ The list updates automatically as you add or remove categories.
 
 ---
 
+## Execution Profiles *(Pro)*
+
+Manage named execution contexts from the hamburger menu → **Manage Profiles** (also accessible from this section). Each profile combines:
+
+- **Profile name** — a short descriptive label (e.g. `As www-data in /var/www`)
+- **Run as** — the target user: current user (no sudo), root, or a custom username
+- **Working directory** — the directory to `cd` into before running the command
+- **Sudo password** — stored locally with machine-specific encoding; passed automatically to `sudo -S` at runtime so no terminal prompt appears
+
+Assign a profile to a button in the [Button Editor](button-editor.md#execution-profile) to apply its settings.
+
+!!! tip "Pro feature"
+    Execution profiles require [RemoteX Pro](../pro.md).
+
+---
+
 ## License
 
 Manages your RemoteX Pro license.

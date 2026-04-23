@@ -35,4 +35,5 @@
 | Sélection multiple + actions de groupe | [Pro](pro.md) |
 | Thèmes de boutons | [Pro](pro.md) |
 | Sauvegarde / restauration de la configuration | [Pro](pro.md) |
+| Profils d'exécution (run-as-user + mot de passe sudo) | [Pro](pro.md) |
 | Serveur MCP (intégration assistant IA) | Gratuit |
