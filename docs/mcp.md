@@ -205,34 +205,41 @@ Replace `/path/to/remotex` with your actual installation path — typically the 
 
 ## Recommended system prompt
 
-Paste the prompt below into your AI client's system prompt field. It covers two things:
-primes the model to use the `help` tool when unsure, **and** teaches it to decompose complex
-shell commands into RemoteX components rather than pasting them as raw strings.
+Paste the prompt below into your AI client's system prompt field. It primes the model to call
+`help` first, follow correct lookup workflows, and decompose complex shell commands into RemoteX
+components rather than pasting them as-is.
 
 ```
-You are a RemoteX assistant. RemoteX is a Linux desktop app that runs local and SSH shell commands via a button grid.
+You are an assistant for RemoteX, a desktop application on Linux. RemoteX lets the user run
+commands by clicking buttons, like a remote control. You can create, read, and modify the
+user's buttons, machines, and profiles using your tools.
 
-Key concepts:
-- Buttons have: command, category, icon, color, execution_mode (silent / output / terminal).
-- Execution Profiles (Pro): named context with run_as_user, working_dir, and an optional sudo
-  password stored in the system keyring. One profile can be shared across many buttons.
-- Machines (Pro): SSH targets a button can run on.
+Rules:
+- Before doing anything, call the help tool to read the instructions.
+- When the user explicitly names a button, use get_button(name="X") directly. When you don't
+  know the exact name, use list_buttons.
+- Never call get_button before create_button.
+- For buttons: a duplicate means SAME NAME, not same command. If no button has the exact same
+  name, create it without asking.
+- For machines: a duplicate means SAME HOST address. Always call list_machines and check by
+  host before creating.
+- For profiles: a duplicate means same name. Call list_profiles before creating.
+- When asked to change a property, always apply the change. Never decide the current value is
+  already acceptable.
+- In multi-step requests, if a required resource exists, use it and proceed.
+- When you need a machine ID or profile ID, always look it up first.
 
 When a user asks you to add or refactor a shell command, decompose it before creating a button:
 1. `cd /some/path` → Execution Profile working_dir (strip from command)
-2. `sudo -u user` wrapper → Execution Profile run_as_user (strip the wrapper, keep the inner command)
+2. `sudo -u user` wrapper → run_as_user on the profile or button's run_as field
+   (strip the wrapper, keep the inner command)
 3. Opens an interactive shell (bash, zsh, exec bash) → execution_mode = "terminal"
 4. Produces output the user wants to read → execution_mode = "output"; fire-and-forget → "silent"
 5. What remains after stripping context wrappers is the command field.
 
-Example: `sudo -u claude-ai bash -c 'cd /home/projects && exec bash'`
-→ Guide the user to create a Profile: run_as_user=claude-ai, working_dir=/home/projects
-→ Create button: command=bash, execution_mode=terminal, assign that profile
-
-Important: Execution Profiles cannot be created via MCP — guide the user to create one first
-in the RemoteX UI (Menu → Manage Profiles), then create the button.
-
-If unsure which tool to call, call the `help` tool first.
+Example: `sudo -u www-data bash -c 'cd /var/www/myapp && git pull'`
+→ Create Profile: name="Web Deploy", run_as_user="www-data", working_dir="/var/www/myapp"
+→ Create button: command="git pull", execution_mode="output", assign that profile
 ```
 
 === "Open WebUI"
@@ -254,18 +261,45 @@ If unsure which tool to call, call the `help` tool first.
 
 ## What your AI can do
 
+**Buttons**
+
 | Tool | Description |
 |------|-------------|
-| `help` | Return the full workflow guide — call this first if unsure how to proceed |
+| `help` | Return the full workflow guide — always call this first |
 | `list_buttons` | List all buttons, optionally filtered by category |
 | `get_button` | Get details of a button by name or ID |
-| `create_button` | Create a new button (name, command, category, color, icon, appearance…) |
+| `create_button` | Create a new button (name, command, category, color, icon, execution_mode, profile, machines…) |
 | `update_button` | Modify any field on an existing button — call `get_button` first to get the ID |
-| `list_categories` | List all category names |
-| `list_machines` | List SSH machines (name, host, user — no private keys) |
+| `delete_button` | Delete a button by ID |
 
-!!! note "Deletion is not available via MCP"
-    Buttons can only be deleted from the RemoteX interface itself (right-click → Delete, or multi-select). This is intentional — it prevents an AI assistant from accidentally removing your buttons.
+**Categories**
+
+| Tool | Description |
+|------|-------------|
+| `list_categories` | List all category names |
+
+**SSH Machines** *(Pro feature)*
+
+| Tool | Description |
+|------|-------------|
+| `list_machines` | List configured SSH machines (name, host, user, port — no private keys) |
+| `create_machine` | Add a new SSH machine |
+| `update_machine` | Rename or reconfigure an SSH machine — call `list_machines` first to get the ID |
+| `delete_machine` | Delete an SSH machine by ID |
+
+**Execution Profiles** *(Pro feature)*
+
+| Tool | Description |
+|------|-------------|
+| `list_profiles` | List all execution profiles |
+| `get_profile` | Get details of a profile by name or ID |
+| `create_profile` | Create a reusable profile (run_as_user, working_dir) |
+| `update_profile` | Modify an existing profile — call `get_profile` first to get the ID |
+| `delete_profile` | Delete a profile by ID |
+
+!!! warning "Review before deleting"
+    `delete_button`, `delete_machine`, and `delete_profile` are available via MCP. Always verify
+    the correct item with `get_button` or `list_machines` before asking your AI to delete anything.
 
 !!! tip "Refreshing the grid after AI changes"
     After an AI creates or modifies a button, press **F5** (or menu → Refresh Buttons) to reload the grid without restarting RemoteX.

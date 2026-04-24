@@ -215,6 +215,6 @@ def test_unknown_tool_returns_json_rpc_error():
         with patch.object(mcp_server, '_send', side_effect=responses.append):
             mcp_server._dispatch({
                 "jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                "params": {"name": "delete_button", "arguments": {}},
+                "params": {"name": "nonexistent_tool_xyz", "arguments": {}},
             })
     assert "error" in responses[0]
