@@ -187,3 +187,9 @@ Good candidates: cross-distro commands, broadly useful for beginners or sysadmin
 The core of RemoteX is released under the **MIT License** — see [LICENSE](LICENSE).
 
 Pro features (`src/pro/`) are proprietary — All Rights Reserved.
+
+---
+
+## Legal
+
+[Terms of Service](https://neurocontrarian.github.io/remotex/legal/terms/) · [Privacy Policy](https://neurocontrarian.github.io/remotex/legal/privacy/) · [Refund Policy](https://neurocontrarian.github.io/remotex/legal/refund/)
