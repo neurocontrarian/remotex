@@ -40,6 +40,10 @@ En aucun cas l'auteur ne sera responsable des dommages indirects, accessoires ou
 
 Ces conditions sont régies par les lois de la province de Québec, Canada.
 
-## 9. Contact
+## 9. Modifications des présentes conditions
+
+Nous nous réservons le droit de modifier ces Conditions à tout moment, à notre seule discrétion. Les modifications prennent effet dès leur publication sur cette page. La date « Dernière mise à jour » en haut de cette page reflète la révision la plus récente. Votre utilisation continue du Logiciel après la publication de modifications vaut acceptation des Conditions révisées. Nous vous encourageons à consulter cette page régulièrement.
+
+## 10. Contact
 
 Pour toute question relative à ces conditions : [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

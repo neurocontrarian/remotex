@@ -49,6 +49,10 @@ Nous ne stockons aucune donnée personnelle sur nos serveurs. Toute votre config
 
 Vous pouvez demander la suppression de votre compte et des données associées en nous contactant. La désactivation de votre licence supprime l'enregistrement d'activation d'appareil des serveurs de LemonSqueezy.
 
+## Modifications de cette politique
+
+Nous nous réservons le droit de mettre à jour cette Politique de confidentialité à tout moment, à notre seule discrétion. Les modifications prennent effet dès leur publication sur cette page. La date « Dernière mise à jour » en haut reflète la révision la plus récente. Nous vous encourageons à consulter cette page régulièrement.
+
 ## Contact
 
 [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

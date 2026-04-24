@@ -49,6 +49,10 @@ We do not store any personal data on our servers. All your configuration data re
 
 You may request deletion of your account and associated data by contacting us. Deactivating your license removes the device activation record from LemonSqueezy's servers.
 
+## Changes to this Policy
+
+We reserve the right to update this Privacy Policy at any time, at our sole discretion. Changes become effective immediately upon posting to this page. The "Last updated" date at the top reflects the most recent revision. We encourage you to review this page periodically.
+
 ## Contact
 
 [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

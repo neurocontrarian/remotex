@@ -40,6 +40,10 @@ In no event shall the author be liable for any indirect, incidental, or conseque
 
 These terms are governed by the laws of the province of Québec, Canada.
 
-## 9. Contact
+## 9. Changes to these Terms
+
+We reserve the right to modify these Terms at any time, at our sole discretion. Changes become effective immediately upon posting to this page. The "Last updated" date at the top of this page reflects the most recent revision. Your continued use of the Software after changes are posted constitutes your acceptance of the revised Terms. We encourage you to review these Terms periodically.
+
+## 10. Contact
 
 For questions about these terms: [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

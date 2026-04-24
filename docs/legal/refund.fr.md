@@ -31,6 +31,10 @@ Si vous rencontrez un problème technique ou une erreur de facturation, n'hésit
 
 Les renouvellements annuels sont éligibles au remboursement dans les **7 jours** suivant la date de renouvellement, à condition que la licence n'ait pas été utilisée sur plus d'un appareil depuis le renouvellement.
 
+## Modifications de cette politique
+
+Nous nous réservons le droit de modifier cette Politique de remboursement à tout moment, à notre seule discrétion. La politique en vigueur à la date de votre achat régit votre éligibilité au remboursement — les modifications futures ne s'appliquent pas aux transactions déjà effectuées.
+
 ## Contact
 
 [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

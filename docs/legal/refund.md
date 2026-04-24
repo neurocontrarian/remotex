@@ -31,6 +31,10 @@ If you experienced a technical issue or billing error, please reach out before r
 
 Yearly renewals are eligible for a refund within **7 days** of the renewal date, provided the license was used on no more than one device since renewal.
 
+## Changes to this Policy
+
+We reserve the right to modify this Refund Policy at any time, at our sole discretion. The policy in effect at the date of your purchase governs your refund eligibility — future modifications do not affect transactions already completed.
+
 ## Contact
 
 [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)
