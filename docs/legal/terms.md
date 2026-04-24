@@ -24,9 +24,13 @@ You may not:
 
 License keys are tied to the email address used at purchase. Each activation consumes one slot (maximum 3). If you reinstall your OS without deactivating first, contact support to free the orphaned slot.
 
-## 5. Updates
+## 5. Updates and license expiry
 
 Pro license holders receive all future updates to the Software at no extra cost for the duration of their license. Yearly license holders must renew to continue receiving updates after expiry.
+
+**Yearly license expiry.** If a yearly license is not renewed, Pro features are automatically deactivated at the end of the subscription period (with a 3-day grace period). The Software reverts to the free tier: SSH machine management, unlimited custom buttons, and other Pro-only features are no longer accessible. Custom buttons you created beyond the free-tier limit (3) are hidden but not deleted — they are fully restored if you renew your license. Your configuration data is never deleted due to a lapsed subscription.
+
+**Renewal.** Renewing your yearly license restores all Pro features automatically within 24 hours, without any manual action required.
 
 ## 6. Disclaimer of warranties
 

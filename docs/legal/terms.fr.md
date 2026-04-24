@@ -24,9 +24,13 @@ Vous ne pouvez pas :
 
 Les clés de licence sont liées à l'adresse e-mail utilisée lors de l'achat. Chaque activation consomme un emplacement (maximum 3). Si vous réinstallez votre système d'exploitation sans désactiver d'abord, contactez le support pour libérer l'emplacement orphelin.
 
-## 5. Mises à jour
+## 5. Mises à jour et expiration de licence
 
 Les titulaires de licence Pro reçoivent toutes les mises à jour futures du Logiciel sans frais supplémentaires pour la durée de leur licence. Les titulaires de licence annuelle doivent renouveler pour continuer à recevoir les mises à jour après expiration.
+
+**Expiration de la licence annuelle.** Si une licence annuelle n'est pas renouvelée, les fonctionnalités Pro sont automatiquement désactivées à la fin de la période d'abonnement (avec un délai de grâce de 3 jours). Le Logiciel revient à la version gratuite : la gestion des machines SSH, les boutons personnalisés illimités et les autres fonctionnalités Pro ne sont plus accessibles. Les boutons personnalisés créés au-delà de la limite de la version gratuite (3) sont masqués mais non supprimés — ils sont entièrement restaurés lors du renouvellement. Vos données de configuration ne sont jamais supprimées en raison d'un abonnement expiré.
+
+**Renouvellement.** Le renouvellement de votre licence annuelle restaure automatiquement toutes les fonctionnalités Pro dans les 24 heures, sans aucune action manuelle requise.
 
 ## 6. Absence de garantie
 
