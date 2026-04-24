@@ -56,6 +56,7 @@ class RemotexWindow(Adw.ApplicationWindow):
         self._cat_buttons: list[Gtk.ToggleButton] = []
         self._updating_cats = False
         self._tiles: dict[str, ButtonTile] = {}
+        self._free_visible_ids: set[str] = set()
         self._custom_css_provider = None
         self._ms = _MultiSelectState()
         self._settings = self._load_settings()
@@ -403,6 +404,15 @@ class RemotexWindow(Adw.ApplicationWindow):
         self._refresh_category_bar(buttons)
         self._apply_grid_settings()
 
+        if not is_pro_active():
+            custom = sorted(
+                [b for b in buttons if not b.is_default],
+                key=lambda b: b.position,
+            )
+            self._free_visible_ids = {b.id for b in custom[:FREE_BUTTON_LIMIT]}
+        else:
+            self._free_visible_ids = set()
+
         if not buttons:
             self.main_stack.set_visible_child_name('empty')
             return
@@ -644,6 +654,11 @@ class RemotexWindow(Adw.ApplicationWindow):
         tile = child.get_child()
         if not isinstance(tile, ButtonTile):
             return True
+
+        btn = tile.command_button
+        if not is_pro_active() and not btn.is_default:
+            if btn.id not in self._free_visible_ids:
+                return False
 
         if tile.command_button.category in self._get_hidden_categories():
             return False

@@ -39,13 +39,15 @@ An internet connection is required for the initial activation.
 
 A yearly license expires 365 days after activation. RemoteX shows a warning toast 30 days before expiry.
 
-After expiry, free tier limits apply again — your buttons and machines are **not deleted**, but custom buttons beyond 3 become temporarily hidden.
+After expiry, free tier limits apply again — your buttons and machines are **not deleted**, but custom buttons beyond 3 become temporarily hidden. The first 3 custom buttons (by grid position) remain visible; all others are hidden until you renew.
 
 Renew from **Preferences → License → Renew license**.
 
 ## Deactivating
 
 To remove the license from a device: **Preferences → License → Deactivate license**.
+
+Free-tier limits apply immediately after deactivation — same as expiry. Your buttons are not deleted; they are restored when you reactivate.
 
 ## Execution profiles *(Pro)*
 

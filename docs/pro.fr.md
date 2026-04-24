@@ -39,13 +39,15 @@ Une connexion internet est nécessaire pour l'activation initiale.
 
 Une licence annuelle expire 365 jours après l'activation. RemoteX affiche un avertissement toast 30 jours avant l'expiration.
 
-Après expiration, les limites de la version gratuite s'appliquent à nouveau — vos boutons et machines ne sont **pas supprimés**, mais les boutons personnalisés au-delà de 3 sont temporairement masqués.
+Après expiration, les limites de la version gratuite s'appliquent à nouveau — vos boutons et machines ne sont **pas supprimés**, mais les boutons personnalisés au-delà de 3 sont temporairement masqués. Les 3 premiers boutons personnalisés (par position dans la grille) restent visibles ; les autres sont masqués jusqu'au renouvellement.
 
 Renouvelez depuis **Préférences → Licence → Renouveler la licence**.
 
 ## Désactivation
 
 Pour retirer la licence d'un appareil : **Préférences → Licence → Désactiver la licence**.
+
+Les limites de la version gratuite s'appliquent immédiatement après la désactivation — même comportement qu'à l'expiration. Vos boutons ne sont pas supprimés ; ils sont restaurés lorsque vous réactivez la licence.
 
 ## Profils d'exécution *(Pro)*
 
