@@ -42,4 +42,4 @@ These terms are governed by the laws of the province of Québec, Canada.
 
 ## 9. Contact
 
-For questions about these terms: [flelard@gmail.com](mailto:flelard@gmail.com)
+For questions about these terms: [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

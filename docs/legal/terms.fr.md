@@ -42,4 +42,4 @@ Ces conditions sont régies par les lois de la province de Québec, Canada.
 
 ## 9. Contact
 
-Pour toute question relative à ces conditions : [flelard@gmail.com](mailto:flelard@gmail.com)
+Pour toute question relative à ces conditions : [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

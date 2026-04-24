@@ -2,15 +2,15 @@
 
 *Dernière mise à jour : avril 2026*
 
-## Garantie satisfait ou remboursé 30 jours
+## Garantie satisfait ou remboursé 14 jours
 
-Nous offrons un **remboursement complet sous 30 jours** pour tout achat, sans condition.
+Nous offrons un **remboursement complet sous 14 jours** pour tout achat, sans condition.
 
-Si RemoteX Pro ne répond pas à vos besoins pour quelque raison que ce soit, contactez-nous dans les 30 jours suivant votre date d'achat et nous effectuerons un remboursement intégral.
+Si RemoteX Pro ne répond pas à vos besoins pour quelque raison que ce soit, contactez-nous dans les 14 jours suivant votre date d'achat et nous effectuerons un remboursement intégral.
 
 ## Comment demander un remboursement
 
-Envoyez un e-mail à [flelard@gmail.com](mailto:flelard@gmail.com) avec :
+Envoyez un e-mail à [neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com) avec :
 
 - L'adresse e-mail utilisée lors de votre achat
 - Votre numéro de commande (figurant sur votre reçu LemonSqueezy)
@@ -23,8 +23,8 @@ Après remboursement, votre clé de licence Pro sera désactivée et les fonctio
 
 ## Renouvellements (licence annuelle)
 
-Les renouvellements de licence annuelle sont éligibles au remboursement dans les 14 jours suivant la date de renouvellement, à condition que la licence n'ait pas été utilisée sur plus d'un appareil depuis le renouvellement.
+Les renouvellements de licence annuelle sont éligibles au remboursement dans les 7 jours suivant la date de renouvellement, à condition que la licence n'ait pas été utilisée sur plus d'un appareil depuis le renouvellement.
 
 ## Contact
 
-[flelard@gmail.com](mailto:flelard@gmail.com)
+[neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

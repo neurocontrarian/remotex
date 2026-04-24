@@ -27,9 +27,8 @@ RemoteX stocke les fichiers suivants dans `~/.config/remotex/` :
 - `buttons.toml` — votre configuration de boutons
 - `machines.toml` — vos définitions de machines SSH (sans clés privées)
 - `profiles.toml` — vos profils d'exécution (les mots de passe sudo sont encodés avec une clé propre à la machine, jamais transmis)
-- `license.key` — votre clé de licence et métadonnées d'activation
 
-Aucun de ces fichiers n'est transmis à un serveur, à l'exception de la clé de licence lors des appels de validation.
+Aucun de ces fichiers n'est transmis à un serveur. La clé de licence et les métadonnées d'activation sont stockées localement et utilisées uniquement lors des appels de validation vers LemonSqueezy.
 
 ## Ce que nous ne collectons pas
 
@@ -52,4 +51,4 @@ Vous pouvez demander la suppression de votre compte et des données associées e
 
 ## Contact
 
-[flelard@gmail.com](mailto:flelard@gmail.com)
+[neurocontrarian@gmail.com](mailto:neurocontrarian@gmail.com)

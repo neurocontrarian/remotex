@@ -6,7 +6,7 @@
 
 > No more typing the same commands over and over. Build a button grid for the tasks you repeat every day.
 
-<!-- [SCREENSHOT: main window with a full grid of colored buttons, category bar visible] -->
+<video src="docs/assets/demo.mp4" controls width="100%"></video>
 
 ---
 
