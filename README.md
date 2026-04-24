@@ -6,7 +6,9 @@
 
 > No more typing the same commands over and over. Build a button grid for the tasks you repeat every day.
 
-<video src="docs/assets/demo.mp4" controls width="100%"></video>
+[![Demo](docs/assets/demo_preview.gif)](https://raw.githubusercontent.com/neurocontrarian/remotex/main/docs/assets/demo.mp4)
+
+*▶ Click to watch the full demo (43s)*
 
 ---
 
