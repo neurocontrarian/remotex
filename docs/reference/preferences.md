@@ -105,6 +105,8 @@ Disabling it removes the autostart file.
 
 ### Allow MCP access
 
+![Preferences — MCP access toggle](../assets/preferences-mcp.png)
+
 Enables the built-in MCP (Model Context Protocol) server. When active, a compatible AI assistant (Claude Desktop, Cursor, etc.) can read and manage your buttons.
 
 Disabled by default. See [AI Integration (MCP)](../mcp.md) for setup instructions.
