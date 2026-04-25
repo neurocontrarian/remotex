@@ -12,6 +12,8 @@ After [installing RemoteX](installation.md), run it from the project folder:
 
 The first launch seeds your grid with **34 default buttons** organised in two categories: Linux Essentials and Development. No setup needed — click any of them to run the command immediately.
 
+![RemoteX main window with default buttons](assets/quick-start-grid.png)
+
 ## 2. Run a default button
 
 Click **Disk Usage** to see your filesystem at a glance. A toast notification confirms success. Click it again while holding no modifier to just run it silently.
