@@ -11,6 +11,8 @@ RemoteX connects to remote servers using SSH key authentication. Passwords are n
 
 Open **Menu → Manage Machines** to see the full machine list. From here you can add, edit, and delete machines.
 
+![Manage Machines dialog](../assets/machines-list.png)
+
 !!! note
     The **Manage Machines** menu item is locked on the free tier.
 

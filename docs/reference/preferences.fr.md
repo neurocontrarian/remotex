@@ -8,6 +8,8 @@ Les paramètres sont enregistrés immédiatement lorsque vous les modifiez — i
 
 ## Général
 
+![Préférences — Général et Mise en page](../assets/preferences-general.png)
+
 ### Langue
 
 Sélectionne la langue de l'interface. RemoteX prend en charge 12 langues :
@@ -53,6 +55,8 @@ N'affecte pas les boutons existants.
 
 ## Apparence des boutons
 
+![Préférences — Apparence des boutons](../assets/preferences-appearance.png)
+
 ### Taille des boutons
 
 Définit la taille de toutes les tuiles de boutons globalement.
@@ -80,6 +84,9 @@ Applique un style visuel à toutes les tuiles de boutons. Consultez [Thèmes](..
 ---
 
 ## Intégration bureau
+
+![Préférences — Intégration bureau](../assets/preferences-desktop.png)
+
 
 ### Toujours au premier plan
 
@@ -110,6 +117,8 @@ Désactivé par défaut. Consultez [Intégration IA (MCP)](../mcp.md) pour les i
 
 ## Catégories
 
+![Préférences — Catégories](../assets/preferences-categories.png)
+
 Liste toutes les catégories qui existent actuellement dans votre configuration de boutons. Chaque ligne possède une option à bascule :
 
 - **Activée** — la pastille de catégorie est visible dans la barre de catégories et ses boutons apparaissent dans la grille
@@ -138,6 +147,8 @@ Assignez un profil à un bouton dans l'[Éditeur de bouton](button-editor.md#pro
 ---
 
 ## Licence
+
+![Préférences — Licence](../assets/preferences-license.png)
 
 Gère votre licence RemoteX Pro.
 

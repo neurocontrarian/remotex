@@ -11,6 +11,8 @@ RemoteX se connecte aux serveurs distants via l'authentification par clé SSH. L
 
 Ouvrez **Menu → Gérer les machines** pour voir la liste complète des machines. Depuis cette fenêtre, vous pouvez ajouter, modifier et supprimer des machines.
 
+![Boîte de dialogue Gérer les machines](../assets/machines-list.png)
+
 !!! note
     L'élément de menu **Gérer les machines** est verrouillé dans la version gratuite.
 

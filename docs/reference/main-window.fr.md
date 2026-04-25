@@ -30,6 +30,8 @@ Active le mode de sélection multiple. Dans ce mode, cliquer sur un bouton bascu
 
 ### Menu hamburger (≡)
 
+![Menu hamburger ouvert](../assets/main-window-menu.png)
+
 Ouvre le menu de l'application :
 
 - **Gérer les machines** — ouvre la liste des machines (Pro uniquement)
@@ -54,6 +56,8 @@ La pastille la plus à gauche. La sélectionner affiche la grille complète, ind
 Une pastille par catégorie, dans l'ordre d'apparition des catégories dans la grille. Cliquer sur une pastille filtre la grille sur cette catégorie uniquement. Une seule pastille peut être active à la fois (comportement radio).
 
 ### Clic droit sur une pastille
+
+![Menu contextuel pastille de catégorie](../assets/categories-context-menu.png)
 
 Un clic droit sur une pastille de catégorie ouvre un petit menu :
 
@@ -89,6 +93,8 @@ La couleur de fond de la tuile et la couleur de l'étiquette peuvent être perso
 **Clic gauche** sur une tuile pour exécuter la commande. Si le bouton a **Confirmer avant d'exécuter** activé, une boîte de dialogue demande une confirmation préalable. Si le bouton cible plusieurs machines, un [sélecteur de machine](ssh-machines.md#le-sélecteur-de-machine) s'affiche.
 
 **Clic droit** sur une tuile pour ouvrir le menu contextuel :
+
+![Menu contextuel bouton (clic droit)](../assets/button-context-menu.png)
 
 - **Modifier** — ouvre l'éditeur de bouton pour ce bouton
 - **Dupliquer** — crée une copie du bouton

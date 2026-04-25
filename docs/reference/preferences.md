@@ -8,6 +8,8 @@ Settings are saved immediately when you change them — there is no Save button.
 
 ## General
 
+![Preferences — General and Grid Layout](../assets/preferences-general.png)
+
 ### Language
 
 Selects the interface language. RemoteX supports 12 languages:
@@ -53,6 +55,8 @@ Does not affect existing buttons.
 
 ## Button Appearance
 
+![Preferences — Button Appearance](../assets/preferences-appearance.png)
+
 ### Button size
 
 Sets the size of all button tiles globally.
@@ -80,6 +84,8 @@ Applies a visual style to all button tiles. See [Themes](../pro/themes.md) for a
 ---
 
 ## Desktop Integration
+
+![Preferences — Desktop Integration](../assets/preferences-desktop.png)
 
 ### Always on top
 
@@ -110,6 +116,8 @@ Disabled by default. See [AI Integration (MCP)](../mcp.md) for setup instruction
 
 ## Categories
 
+![Preferences — Categories](../assets/preferences-categories.png)
+
 Lists all categories that currently exist in your button configuration. Each row has a toggle:
 
 - **Enabled** — the category pill is visible in the category bar and its buttons appear in the grid
@@ -138,6 +146,8 @@ Assign a profile to a button in the [Button Editor](button-editor.md#execution-p
 ---
 
 ## License
+
+![Preferences — License](../assets/preferences-license.png)
 
 Manages your RemoteX Pro license.
 

@@ -16,6 +16,8 @@ Click any category pill in the tab bar to show only the buttons in that category
 
 ## Hiding a category
 
+![Category right-click menu — Hide category](assets/categories-context-menu.png)
+
 Right-click a category pill → **Hide category**. The category and all its buttons disappear from the grid.
 
 To show it again: **Preferences → Categories → toggle the category back on**.

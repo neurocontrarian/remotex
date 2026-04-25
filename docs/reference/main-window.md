@@ -30,6 +30,8 @@ Enters multi-select mode. In this mode, clicking a button toggles its selection 
 
 ### Hamburger menu (≡)
 
+![Hamburger menu open](../assets/main-window-menu.png)
+
 Opens the application menu:
 
 - **Manage Machines** — opens the machine list dialog (Pro only)
@@ -54,6 +56,8 @@ The leftmost pill. Selecting it shows the full grid regardless of categories. It
 One pill per category, in the order categories first appear in the grid. Clicking a pill filters the grid to that category only. Only one pill can be active at a time (radio behaviour).
 
 ### Right-click on a pill
+
+![Category pill right-click menu](../assets/categories-context-menu.png)
 
 Right-clicking a category pill opens a small menu:
 
@@ -89,6 +93,8 @@ The tile background and label color can be customised per button.
 **Left-click** a tile to run the command. If the button has **Confirm before running** enabled, a dialog asks for confirmation first. If the button targets multiple machines, a [machine picker](ssh-machines.md#the-machine-picker) appears.
 
 **Right-click** a tile to open the context menu:
+
+![Button right-click context menu](../assets/button-context-menu.png)
 
 - **Edit** — opens the button editor for this button
 - **Duplicate** — creates a copy of the button

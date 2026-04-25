@@ -12,6 +12,8 @@ Après avoir [installé RemoteX](installation.md), lancez-le depuis le dossier d
 
 Au premier lancement, votre grille est remplie avec **34 boutons par défaut** organisés en deux catégories : Linux Essentials et Développement. Aucune configuration nécessaire — cliquez sur l'un d'eux pour exécuter la commande immédiatement.
 
+![Fenêtre principale RemoteX avec les boutons par défaut](assets/quick-start-grid.png)
+
 ## 2. Utiliser un bouton par défaut
 
 Cliquez sur **Utilisation disque** pour voir votre système de fichiers en un coup d'œil. Une notification toast confirme le succès.
