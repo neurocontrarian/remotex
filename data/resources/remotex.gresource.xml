@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/github/remotex/RemoteX">
+    <file preprocess="xml-stripblanks">ui/window.ui</file>
+    <file preprocess="xml-stripblanks">ui/button_tile.ui</file>
+    <file preprocess="xml-stripblanks">ui/shortcuts_window.ui</file>
+    <file>style.css</file>
+    <file>icons/hicolor/48x48/apps/com.github.remotex.RemoteX.png</file>
+    <file>icons/hicolor/128x128/apps/com.github.remotex.RemoteX.png</file>
+    <file>icons/hicolor/256x256/apps/com.github.remotex.RemoteX.png</file>
+    <file>icons/hicolor/512x512/apps/com.github.remotex.RemoteX.png</file>
+    <file>icons/hicolor/scalable/actions/external-link-symbolic.svg</file>
+    <file>icons/hicolor/scalable/actions/web-browser-symbolic.svg</file>
+    <file>icons/hicolor/scalable/actions/bug-symbolic.svg</file>
+    <file>bootstrap/activity.svg</file>
+    <file>bootstrap/arrow-clockwise.svg</file>
+    <file>bootstrap/box-seam.svg</file>
+    <file>bootstrap/broadcast.svg</file>
+    <file>bootstrap/clock-history.svg</file>
+    <file>bootstrap/cloud-download.svg</file>
+    <file>bootstrap/cpu.svg</file>
+    <file>bootstrap/ethernet.svg</file>
+    <file>bootstrap/file-earmark-diff.svg</file>
+    <file>bootstrap/file-text.svg</file>
+    <file>bootstrap/filetype-js.svg</file>
+    <file>bootstrap/filetype-py.svg</file>
+    <file>bootstrap/git.svg</file>
+    <file>bootstrap/hdd.svg</file>
+    <file>bootstrap/info-circle.svg</file>
+    <file>bootstrap/journal-text.svg</file>
+    <file>bootstrap/memory.svg</file>
+    <file>bootstrap/people.svg</file>
+    <file>bootstrap/plug.svg</file>
+    <file>bootstrap/power.svg</file>
+    <file>bootstrap/stack.svg</file>
+    <file>bootstrap/terminal.svg</file>
+    <file>bootstrap/thermometer-half.svg</file>
+    <file>bootstrap/folder2.svg</file>
+    <file>bootstrap/person-check.svg</file>
+    <file>bootstrap/exclamation-triangle.svg</file>
+    <file>bootstrap/trash.svg</file>
+    <file>bootstrap/laptop.svg</file>
+    <file>bootstrap/pc-display.svg</file>
+    <file>bootstrap/pc-display-horizontal.svg</file>
+    <file>bootstrap/pencil.svg</file>
+    <file>bootstrap/router.svg</file>
+    <file>bootstrap/server.svg</file>
+    <file>bootstrap/wifi.svg</file>
+  </gresource>
+</gresources>

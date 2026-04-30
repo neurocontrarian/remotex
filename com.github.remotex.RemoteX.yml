@@ -1,0 +1,212 @@
+id: com.github.remotex.RemoteX
+runtime: org.gnome.Platform
+runtime-version: '47'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: remotex
+
+# Global build options — Rust toolchain made available for cryptography + bcrypt
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+
+finish-args:
+  # Display — prefer Wayland, fall back to X11
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  # Network — SSH connections via Paramiko
+  - --share=network
+  # Filesystem — home dir gives local commands meaningful scope
+  - --filesystem=home
+  # SSH keys — read + write (ssh_key_service generates keys)
+  - --filesystem=~/.ssh
+  # App config directory (buttons.toml, machines.toml, license.key)
+  - --filesystem=~/.config/remotex:create
+  # Open URLs in system browser (docs, purchase link)
+  - --talk-name=org.freedesktop.portal.OpenURI
+  - --talk-name=org.freedesktop.portal.Desktop
+  # GSettings / dconf
+  - --metadata=X-DConf=migrate-path=/com/github/remotex/RemoteX/
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /share/man
+  - '*.la'
+  - '*.a'
+
+modules:
+
+  # ── wmctrl — X11 window management (always-on-top feature) ──────────────────
+  # SHA256 to verify: wget https://downloads.sourceforge.net/project/wmctrl/wmctrl/1.07/wmctrl-1.07.tar.gz && sha256sum wmctrl-1.07.tar.gz
+  - name: wmctrl
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://sourceforge.net/projects/wmctrl/files/wmctrl/1.07/wmctrl-1.07.tar.gz/download
+        sha256: a4942dc7ed4f4f9563d4fc905add5f118bab4edfc03165ce4ddb3f9aa5c511d3
+
+  # ── cffi — C Foreign Function Interface (required by pynacl + cairocffi) ─────
+  # If the build fails here, run: build-aux/flatpak/gen-deps.sh
+  # to obtain the correct SHA256 for cffi and pycparser.
+  - name: python3-pycparser
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps pycparser-*.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/1d/b2/31537cf4b1ca988837256c910a668b553fceb8f069bedc4b1c826024b52c/pycparser-2.22.tar.gz
+        sha256: 491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6
+
+  - name: python3-cffi
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation cffi-*.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/fc/97/c783634659c2920c3fc70419e3af40972dbaf758daa229a7d6ea6135c90d/cffi-1.17.1.tar.gz
+        sha256: 1c39c6016c32bc48dd54561950ebd6836e1670f2ae46128f67cf49e789c52824
+
+  # ── cryptography — Rust-based crypto library (required by paramiko) ──────────
+  - name: python3-cryptography
+    buildsystem: simple
+    build-options:
+      env:
+        CARGO_HOME: /run/build/python3-cryptography/cargo
+        CARGO_NET_OFFLINE: 'true'
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation cryptography-47.0.0.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/ef/b2/7ffa7fe8207a8c42147ffe70c3e360b228160c1d85dc3faff16aaa3244c0/cryptography-47.0.0.tar.gz
+        sha256: 9f8e55fe4e63613a5e1cc5819030f27b97742d720203a087802ce4ce9ceb52bb
+
+  # ── bcrypt — Rust-based (SSH keys with bcrypt passphrase) ───────────────────
+  - name: python3-bcrypt
+    buildsystem: simple
+    build-options:
+      env:
+        CARGO_HOME: /run/build/python3-bcrypt/cargo
+        CARGO_NET_OFFLINE: 'true'
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation bcrypt-5.0.0.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/d4/36/3329e2518d70ad8e2e5819d5a4cac6bba05a47767ec416c7d020a965f408/bcrypt-5.0.0.tar.gz
+        sha256: f748f7c2d6fd375cc93d3fba7ef4a9e3a092421b8dbf34d8d4dc06be9492dfdd
+
+  # ── pynacl — Ed25519 SSH key support (optional, graceful degradation) ────────
+  - name: python3-pynacl
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation pynacl-1.6.2.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/d9/9a/4019b524b03a13438637b11538c82781a5eda427394380381af8f04f467a/pynacl-1.6.2.tar.gz
+        sha256: 018494d6d696ae03c7e656e5e74cdfd8ea1326962cc401bcf018f1ed8436811c
+
+  # ── Pure Python packages ─────────────────────────────────────────────────────
+
+  - name: python3-tomli-w
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps tomli_w-1.2.0-py3-none-any.whl
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/c7/18/c86eb8e0202e32dd3df50d43d7ff9854f8e0603945ff398974c1d91ac1ef/tomli_w-1.2.0-py3-none-any.whl
+        sha256: 188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90
+
+  - name: python3-invoke
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps invoke-3.0.3-py3-none-any.whl
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/5a/de/bbc12563bbf979618d17625a4e753ff7a078523e28d870d3626daa97261a/invoke-3.0.3-py3-none-any.whl
+        sha256: f11327165e5cbb89b2ad1d88d3292b5113332c43b8553b494da435d6ec6f5053
+
+  - name: python3-fabric
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps fabric-3.2.3-py3-none-any.whl
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/37/f9/f8497ef8b873a8bb2a750ee2a6c5f0fc22258e1acb6245fd237042a6c279/fabric-3.2.3-py3-none-any.whl
+        sha256: ce61917f4f398018337ce279b357650a3a74baecf3fdd53a5839013944af965e
+
+  - name: python3-paramiko
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps paramiko-4.0.0-py3-none-any.whl
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/a9/90/a744336f5af32c433bd09af7854599682a383b37cfd78f7de263de6ad6cb/paramiko-4.0.0-py3-none-any.whl
+        sha256: 0e20e00ac666503bf0b4eda3b6d833465a2b7aff2e2b3d79a8bba5ef144ee3b9
+
+  # ── cairosvg + deps — Bootstrap SVG icon rendering (optional) ────────────────
+  # cairosvg is imported inside a try/except — the app degrades gracefully if absent.
+
+  - name: python3-webencodings
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps webencodings-0.5.1.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/0b/02/ae6ceac1baeda530866a85075641cec12989bd8d31af6d5ab4a3e8c92f47/webencodings-0.5.1.tar.gz
+        sha256: b36a1c245f2d304965eb4e0a82848379241dc04b865afcc4aab16748587e1923
+
+  - name: python3-tinycss2
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation tinycss2-1.5.1.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/a3/ae/2ca4913e5c0f09781d75482874c3a95db9105462a92ddd303c7d285d3df2/tinycss2-1.5.1.tar.gz
+        sha256: d339d2b616ba90ccce58da8495a78f46e55d4d25f9fd71dfd526f07e7d53f957
+
+  - name: python3-cssselect2
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation cssselect2-0.9.0.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/e0/20/92eaa6b0aec7189fa4b75c890640e076e9e793095721db69c5c81142c2e1/cssselect2-0.9.0.tar.gz
+        sha256: 759aa22c216326356f65e62e791d66160a0f9c91d1424e8d8adc5e74dddfc6fb
+
+  - name: python3-defusedxml
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps defusedxml-0.7.1.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz
+        sha256: 1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69
+
+  - name: python3-cairocffi
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps --no-build-isolation cairocffi-1.7.1.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/70/c5/1a4dc131459e68a173cbdab5fad6b524f53f9c1ef7861b7698e998b837cc/cairocffi-1.7.1.tar.gz
+        sha256: 2e48ee864884ec4a3a34bfa8c9ab9999f688286eb714a15a43ec9d068c36557b
+
+  - name: python3-cairosvg
+    buildsystem: simple
+    build-commands:
+      - pip3 install --prefix=/app --no-deps cairosvg-2.9.0.tar.gz
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/38/07/e8412a13019b3f737972dea23a2c61ca42becafc16c9338f4ca7a0caa993/cairosvg-2.9.0.tar.gz
+        sha256: 1debb00cd2da11350d8b6f5ceb739f1b539196d71d5cf5eb7363dbd1bfbc8dc5
+
+  # ── RemoteX application ──────────────────────────────────────────────────────
+
+  - name: remotex
+    buildsystem: meson
+    post-install:
+      - glib-compile-schemas /app/share/glib-2.0/schemas
+    sources:
+      - type: dir
+        path: .

@@ -1,0 +1,1172 @@
+import json
+import shlex
+import sys
+from pathlib import Path
+
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, Gio, GLib
+
+from feature_gate import (
+    is_pro_active, get_license_key, get_license_info, get_trial_info,
+    clear_license_key, validate_license_online,
+    FREE_BUTTON_LIMIT, FREE_MACHINE_LIMIT, TRIAL_DAYS, PRO_INFO_URL, PRO_BUY_URL, SUPPORT_EMAIL, PRO_AVAILABLE,
+)
+from i18n import _, set_language, SUPPORTED_LANGUAGES
+
+
+def show_preferences_dialog(parent, config=None):
+    try:
+        settings = Gio.Settings.new('com.github.remotex.RemoteX')
+    except Exception:
+        settings = None
+
+    dialog = Adw.Window(title=_("Preferences"))
+    from utils.desktop import make_floating_window
+    make_floating_window(dialog, parent, 480, 660)
+
+    dialog._timeout_ids = []
+
+    def _add_timeout(delay_ms, callback):
+        tid_holder = [None]
+        def _wrap():
+            result = callback()
+            if not result and tid_holder[0] in dialog._timeout_ids:
+                dialog._timeout_ids.remove(tid_holder[0])
+            return result
+        tid = GLib.timeout_add(delay_ms, _wrap)
+        tid_holder[0] = tid
+        dialog._timeout_ids.append(tid)
+        return tid
+
+    def _cancel_timeouts(*_):
+        for tid in list(dialog._timeout_ids):
+            try:
+                GLib.source_remove(tid)
+            except Exception:
+                pass
+        dialog._timeout_ids.clear()
+        return False
+
+    dialog.connect('close-request', _cancel_timeouts)
+
+    toolbar_view = Adw.ToolbarView()
+    toolbar_view.add_top_bar(Adw.HeaderBar())
+    dialog.set_content(toolbar_view)
+
+    page = Adw.PreferencesPage()
+    toolbar_view.set_content(page)
+
+    def _add_execution_section():
+        group = Adw.PreferencesGroup(title=_("Command Execution"))
+        timeout_row = Adw.SpinRow.new_with_range(5, 300, 5)
+        timeout_row.set_title(_("Command timeout"))
+        timeout_row.set_subtitle(_("Maximum duration before a command is killed (seconds)"))
+        timeout_row.set_value(settings.get_int('command-timeout') if settings else 30)
+        if settings:
+            timeout_row.connect(
+                'notify::value',
+                lambda row, _: settings.set_int('command-timeout', int(row.get_value())),
+            )
+        group.add(timeout_row)
+        confirm_row = Adw.SwitchRow()
+        confirm_row.set_title(_("Default confirmation"))
+        confirm_row.set_subtitle(_("Pre-tick 'Confirm before running' for all new buttons"))
+        confirm_row.set_active(settings.get_boolean('confirm-before-run') if settings else False)
+        if settings:
+            confirm_row.connect(
+                'notify::active',
+                lambda row, _: settings.set_boolean('confirm-before-run', row.get_active()),
+            )
+        group.add(confirm_row)
+        page.add(group)
+
+    def _add_interface_section():
+        group = Adw.PreferencesGroup(title=_("Interface"))
+        lang_codes = list(SUPPORTED_LANGUAGES.keys())
+        lang_model = Gtk.StringList()
+        for label in SUPPORTED_LANGUAGES.values():
+            lang_model.append(label)
+        lang_row = Adw.ComboRow(title=_("Language"))
+        lang_row.set_subtitle(_("Interface language — restart required"))
+        lang_row.set_tooltip_text(_("Restart RemoteX to apply the language change"))
+        lang_row.set_model(lang_model)
+        current_lang = settings.get_string('language') if settings else "system"
+        lang_row.set_selected(lang_codes.index(current_lang) if current_lang in lang_codes else 0)
+        _lang_active = [False]
+
+        def _on_lang_changed(row, _param):
+            if not _lang_active[0]:
+                return
+            lang = lang_codes[row.get_selected()]
+            if lang == current_lang:
+                return
+            if settings:
+                settings.set_string('language', lang)
+            set_language(lang)
+            dialog.close()
+            if hasattr(parent, 'show_toast'):
+                parent.show_toast(_("Language changed — restart RemoteX to apply"))
+
+        lang_row.connect('notify::selected', _on_lang_changed)
+        # Adw.ComboRow emits spurious notify::selected after set_model()/set_selected().
+        # Block the handler until signals have settled; 300ms covers deferred emissions.
+        _add_timeout(300, lambda: _lang_active.__setitem__(0, True) or False)
+        group.add(lang_row)
+
+        scheme_model = Gtk.StringList()
+        scheme_values = ["system", "light", "dark"]
+        for label in [_("Follow system"), _("Light"), _("Dark")]:
+            scheme_model.append(label)
+        scheme_row = Adw.ComboRow(title=_("Color scheme"))
+        scheme_row.set_subtitle(_("Override the system dark/light mode"))
+        scheme_row.set_model(scheme_model)
+        current_scheme = settings.get_string('color-scheme') if settings else "system"
+        scheme_row.set_selected(scheme_values.index(current_scheme) if current_scheme in scheme_values else 0)
+        if settings:
+            scheme_row.connect(
+                'notify::selected',
+                lambda row, _: settings.set_string('color-scheme', scheme_values[row.get_selected()]),
+            )
+        group.add(scheme_row)
+        page.add(group)
+
+    def _add_grid_section():
+        group = Adw.PreferencesGroup(title=_("Button Grid Layout"))
+        cols_row = Adw.SpinRow.new_with_range(1, 20, 1)
+        cols_row.set_title(_("Buttons per row"))
+        cols_row.set_subtitle(_("Fixed number of buttons on each row"))
+        cols_row.set_value(settings.get_int('grid-columns') if settings else 4)
+        if settings:
+            cols_row.connect(
+                'notify::value',
+                lambda row, _: settings.set_int('grid-columns', int(row.get_value())),
+            )
+        group.add(cols_row)
+        page.add(group)
+
+    def _add_appearance_section():
+        group = Adw.PreferencesGroup(title=_("Button Appearance"))
+        size_model = Gtk.StringList()
+        size_values = ["small", "medium", "large"]
+        for label in [_("Small  (80×80)"), _("Medium  (120×120)"), _("Large  (160×160)")]:
+            size_model.append(label)
+        size_row = Adw.ComboRow(title=_("Button size"))
+        size_row.set_subtitle(_("Size of each button tile in the grid"))
+        size_row.set_model(size_model)
+        current_size = settings.get_string('button-size') if settings else "medium"
+        size_row.set_selected(size_values.index(current_size) if current_size in size_values else 1)
+        if settings:
+            size_row.connect(
+                'notify::selected',
+                lambda row, _: settings.set_string('button-size', size_values[row.get_selected()]),
+            )
+        group.add(size_row)
+
+        theme_values = ["bold", "cards", "phone", "neon", "retro", "custom"]
+        theme_model = Gtk.StringList()
+        for label in [_("Bold (default)"), _("Cards"), _("Phone keys"), _("Neon"), _("Retro"), _("Custom CSS…")]:
+            theme_model.append(label)
+        theme_row = Adw.ComboRow(title=_("Button theme"))
+        theme_row.set_subtitle(_("Visual style of button tiles — Pro feature"))
+        theme_row.set_model(theme_model)
+        _pro = is_pro_active()
+        current_theme = settings.get_string('button-theme') if (settings and _pro) else "bold"
+        if settings and _pro:
+            theme_row.set_selected(theme_values.index(current_theme) if current_theme in theme_values else 0)
+        else:
+            theme_row.set_selected(0)
+            theme_row.set_sensitive(False)
+            lock_icon = Gtk.Image.new_from_icon_name("changes-prevent-symbolic")
+            lock_icon.set_tooltip_text(_("Upgrade to Pro to unlock custom themes"))
+            lock_icon.add_css_class("dim-label")
+            theme_row.add_suffix(lock_icon)
+        group.add(theme_row)
+
+        _custom_path = settings.get_string('custom-theme-path') if (settings and _pro) else ""
+        custom_file_row = Adw.ActionRow(title=_("Custom CSS file"))
+        custom_file_row.set_subtitle(_custom_path if _custom_path else _("No file selected"))
+        custom_file_row.set_tooltip_text(
+            _("A CSS file targeting .button-tile to style your buttons.\n"
+              "Export a template to see the available selectors and named colors.")
+        )
+        custom_file_row.set_sensitive(_pro)
+        browse_btn = Gtk.Button(icon_name="document-open-symbolic", valign=Gtk.Align.CENTER,
+                                tooltip_text=_("Browse for a CSS file"))
+        browse_btn.add_css_class("flat")
+        browse_btn.add_css_class("circular")
+        template_btn = Gtk.Button(icon_name="document-save-symbolic", valign=Gtk.Align.CENTER,
+                                  tooltip_text=_("Export a starter template CSS file"))
+        template_btn.add_css_class("flat")
+        template_btn.add_css_class("circular")
+        custom_file_row.add_suffix(template_btn)
+        custom_file_row.add_suffix(browse_btn)
+        group.add(custom_file_row)
+
+        if settings and _pro:
+            theme_row.connect(
+                'notify::selected',
+                lambda row, _: settings.set_string('button-theme', theme_values[row.get_selected()]),
+            )
+
+        def _on_browse_css(_btn):
+            file_dialog = Gtk.FileDialog(title=_("Select CSS theme file"))
+            filter_ = Gtk.FileFilter()
+            filter_.set_name("CSS files (*.css)")
+            filter_.add_pattern("*.css")
+            filters = Gio.ListStore.new(Gtk.FileFilter)
+            filters.append(filter_)
+            file_dialog.set_filters(filters)
+            def _on_done(dlg, result):
+                try:
+                    gfile = dlg.open_finish(result)
+                    if gfile and settings:
+                        path = gfile.get_path()
+                        settings.set_string('custom-theme-path', path)
+                        custom_file_row.set_subtitle(path)
+                except Exception:
+                    pass
+            file_dialog.open(dialog, None, _on_done)
+
+        def _on_export_template(_btn):
+            file_dialog = Gtk.FileDialog(title=_("Export CSS template"))
+            filter_ = Gtk.FileFilter()
+            filter_.set_name("CSS files (*.css)")
+            filter_.add_pattern("*.css")
+            filters = Gio.ListStore.new(Gtk.FileFilter)
+            filters.append(filter_)
+            file_dialog.set_filters(filters)
+            file_dialog.set_initial_name("remotex-theme.css")
+            def _on_save(dlg, result):
+                try:
+                    gfile = dlg.save_finish(result)
+                    if gfile:
+                        Path(gfile.get_path()).write_text(_THEME_TEMPLATE)
+                except Exception:
+                    pass
+            file_dialog.save(dialog, None, _on_save)
+
+        browse_btn.connect('clicked', _on_browse_css)
+        template_btn.connect('clicked', _on_export_template)
+        page.add(group)
+
+    def _add_categories_section():
+        if not config or not settings:
+            return
+        buttons = config.load_buttons()
+        categories = sorted({b.category for b in buttons if b.category})
+        if not categories:
+            return
+        group = Adw.PreferencesGroup(title=_("Categories"))
+        group.set_description(_("Hidden categories and their buttons will not appear in the grid"))
+        hidden = set(settings.get_strv('hidden-categories'))
+
+        def make_toggle_handler(cat_name):
+            def on_toggle(row, _):
+                current_hidden = set(settings.get_strv('hidden-categories'))
+                if row.get_active():
+                    current_hidden.discard(cat_name)
+                else:
+                    current_hidden.add(cat_name)
+                settings.set_strv('hidden-categories', sorted(current_hidden))
+            return on_toggle
+
+        for cat in categories:
+            row = Adw.SwitchRow()
+            row.set_title(cat)
+            row.set_active(cat not in hidden)
+            row.connect('notify::active', make_toggle_handler(cat))
+            group.add(row)
+        page.add(group)
+
+    def _add_icon_dirs_section():
+        if not settings:
+            return
+        group = Adw.PreferencesGroup(title=_("Custom Icon Directories"))
+        group.set_description(
+            _("Directories searched for icons before the bundled Bootstrap Icons set.\n"
+              "Place .png or .svg files named after the icon (e.g. my-icon.svg) in any listed folder.")
+        )
+        _icon_rows = []
+
+        def _refresh_icon_rows():
+            for row in _icon_rows:
+                group.remove(row)
+            _icon_rows.clear()
+            for path in settings.get_strv('icon-search-paths'):
+                row = Adw.ActionRow(title=path)
+                row.set_subtitle(_("Click × to remove"))
+                remove_btn = Gtk.Button(icon_name="user-trash-symbolic",
+                                        valign=Gtk.Align.CENTER,
+                                        tooltip_text=_("Remove this directory"))
+                remove_btn.add_css_class("flat")
+                remove_btn.add_css_class("circular")
+                def _on_remove(_btn, p=path):
+                    current = list(settings.get_strv('icon-search-paths'))
+                    if p in current:
+                        current.remove(p)
+                        settings.set_strv('icon-search-paths', current)
+                    _refresh_icon_rows()
+                remove_btn.connect('clicked', _on_remove)
+                row.add_suffix(remove_btn)
+                _icon_rows.append(row)
+                group.add(row)
+
+            add_row = Adw.ActionRow(title=_("Add directory…"))
+            add_row.set_subtitle(_("Browse for a folder containing icon files"))
+            add_row.set_activatable(True)
+            add_btn = Gtk.Button(icon_name="folder-new-symbolic", valign=Gtk.Align.CENTER,
+                                 tooltip_text=_("Browse for a folder containing icon files"))
+            add_btn.add_css_class("flat")
+            add_btn.add_css_class("circular")
+            add_row.add_suffix(add_btn)
+            def _on_add(_widget):
+                file_dialog = Gtk.FileDialog(title="Select icon directory")
+                file_dialog.select_folder(parent, None, _on_folder_chosen)
+            def _on_folder_chosen(dlg, result):
+                try:
+                    folder = dlg.select_folder_finish(result)
+                    if folder:
+                        current = list(settings.get_strv('icon-search-paths'))
+                        new_path = folder.get_path()
+                        if new_path and new_path not in current:
+                            current.append(new_path)
+                            settings.set_strv('icon-search-paths', current)
+                        _refresh_icon_rows()
+                except Exception:
+                    pass
+            add_btn.connect('clicked', _on_add)
+            add_row.connect('activated', _on_add)
+            _icon_rows.append(add_row)
+            group.add(add_row)
+
+        _refresh_icon_rows()
+        page.add(group)
+
+    def _add_desktop_section():
+        group = Adw.PreferencesGroup(title=_("Desktop Integration"))
+        always_on_top_row = Adw.SwitchRow()
+        always_on_top_row.set_title(_("Always on top"))
+        always_on_top_row.set_subtitle(_("Keep RemoteX above all other windows"))
+        always_on_top_row.set_active(settings.get_boolean('always-on-top') if settings else False)
+        if settings:
+            always_on_top_row.connect(
+                'notify::active',
+                lambda row, _: settings.set_boolean('always-on-top', row.get_active()),
+            )
+        group.add(always_on_top_row)
+
+        autostart_path = Path.home() / '.config' / 'autostart' / 'remotex.desktop'
+        autostart_row = Adw.SwitchRow()
+        autostart_row.set_title(_("Launch at login"))
+        autostart_row.set_subtitle(_("Start RemoteX automatically when you log in"))
+        autostart_row.set_active(autostart_path.exists())
+        def _on_autostart_toggle(row, _):
+            if row.get_active():
+                autostart_path.parent.mkdir(parents=True, exist_ok=True)
+                exe = sys.argv[0]
+                if exe == '-c' or not Path(exe).exists():
+                    run_dev = Path(__file__).resolve().parent.parent.parent / 'run_dev.sh'
+                    exec_line = shlex.quote(str(run_dev))
+                elif exe.endswith('.py'):
+                    exec_line = f'{shlex.quote(sys.executable)} {shlex.quote(exe)}'
+                else:
+                    exec_line = shlex.quote(exe)
+                autostart_path.write_text(
+                    '[Desktop Entry]\n'
+                    'Type=Application\n'
+                    'Name=RemoteX\n'
+                    f'Exec={exec_line}\n'
+                    'Hidden=false\n'
+                    'NoDisplay=false\n'
+                    'X-GNOME-Autostart-enabled=true\n'
+                )
+            else:
+                autostart_path.unlink(missing_ok=True)
+        autostart_row.connect('notify::active', _on_autostart_toggle)
+        group.add(autostart_row)
+
+        if is_pro_active():
+            mcp_flag = Path.home() / '.config' / 'remotex' / '.mcp_enabled'
+            mcp_row = Adw.SwitchRow()
+            mcp_row.set_title(_("Allow MCP access"))
+            mcp_row.set_subtitle(_("Let AI assistants (Claude Desktop, Cursor…) read and edit your buttons via MCP"))
+            mcp_row.set_active(mcp_flag.exists())
+
+            mcp_exec_row = Adw.SwitchRow()
+            mcp_exec_row.set_title(_("Allow AI execution"))
+            mcp_exec_row.set_subtitle(
+                _("Permit AI clients to trigger buttons that have 'Allow AI to run this button' enabled")
+            )
+            if settings:
+                mcp_exec_row.set_active(settings.get_boolean('mcp-execution-enabled'))
+            mcp_exec_row.set_sensitive(mcp_flag.exists())
+
+            def _on_mcp_toggle(row, _):
+                if row.get_active():
+                    mcp_flag.parent.mkdir(parents=True, exist_ok=True)
+                    mcp_flag.touch()
+                else:
+                    mcp_flag.unlink(missing_ok=True)
+                mcp_exec_row.set_sensitive(row.get_active())
+            mcp_row.connect('notify::active', _on_mcp_toggle)
+            group.add(mcp_row)
+
+            if settings:
+                mcp_exec_row.connect(
+                    'notify::active',
+                    lambda row, _: settings.set_boolean('mcp-execution-enabled', row.get_active()),
+                )
+            group.add(mcp_exec_row)
+        page.add(group)
+
+    def _add_mcp_setup_section():
+        if not is_pro_active():
+            return
+        mcp_server_path = str(Path(__file__).resolve().parent.parent / 'pro' / 'mcp_server.py')
+        _CLIENTS = [
+            {
+                "label": "Claude Desktop",
+                "config_path": Path.home() / '.config' / 'Claude' / 'claude_desktop_config.json',
+                "format": "json",
+                "instruction": _("Restart Claude Desktop after applying."),
+            },
+            {
+                "label": "Claude Code (CLI)",
+                "config_path": None,
+                "format": "command",
+                "instruction": _("Run this command once in a terminal. Verify with: claude mcp list"),
+            },
+            {
+                "label": "Cursor",
+                "config_path": Path.home() / '.cursor' / 'mcp_config.json',
+                "format": "json",
+                "instruction": _("Restart Cursor after applying."),
+            },
+            {
+                "label": "Windsurf",
+                "config_path": Path.home() / '.codeium' / 'windsurf' / 'mcp_config.json',
+                "format": "json",
+                "instruction": _("Restart Windsurf after applying."),
+            },
+            {
+                "label": "Continue.dev",
+                "config_path": None,
+                "format": "yaml",
+                "instruction": _("Add to .continue/config.yaml in your project (Agent mode only)."),
+            },
+            {
+                "label": "Open WebUI (llama.cpp / Ollama)",
+                "config_path": None,
+                "format": "openwebui",
+                "instruction": _("Run steps 1–2 in a terminal, then in Open WebUI: Admin Panel → Integrations → Manage tool servers → Type: OpenAPI."),
+            },
+        ]
+
+        def _snippet(client: dict) -> str:
+            if client["format"] == "json":
+                return json.dumps({
+                    "mcpServers": {"remotex": {"command": "python3", "args": [mcp_server_path]}}
+                }, indent=2)
+            if client["format"] == "command":
+                return f"claude mcp add remotex python3 {mcp_server_path}"
+            if client["format"] == "openwebui":
+                return (
+                    f"# 1. Install the proxy (once — use pipx if pip fails)\n"
+                    f"pip install mcpo\n\n"
+                    f"# 2. Find your local IP (if Open WebUI is on another machine)\n"
+                    f"hostname -I | awk '{{print $1}}'\n\n"
+                    f"# 3. Run this in a terminal (keep it running)\n"
+                    f"mcpo --port 8000 -- python3 {mcp_server_path}\n\n"
+                    f"# 4. In Open WebUI: Admin Panel → Integrations → Manage tool servers\n"
+                    f"#    Type: OpenAPI  |  URL: http://<your-ip>:8000\n"
+                    f"#    (use http://localhost:8000 if Open WebUI runs on this machine)"
+                )
+            # yaml
+            return (
+                f"mcpServers:\n"
+                f"  - name: remotex\n"
+                f"    command: python3\n"
+                f"    args:\n"
+                f"      - {mcp_server_path}"
+            )
+
+        group = Adw.PreferencesGroup(title=_("MCP Client Setup"))
+        group.set_description(
+            _("Connect your AI assistant to RemoteX. "
+              "Enable 'Allow MCP access' in Desktop Integration above first.")
+        )
+
+        client_model = Gtk.StringList()
+        for c in _CLIENTS:
+            client_model.append(c["label"])
+        client_row = Adw.ComboRow(title=_("AI Client"))
+        client_row.set_model(client_model)
+        group.add(client_row)
+
+        file_row = Adw.ActionRow(title=_("Config file"))
+        copy_btn = Gtk.Button(label=_("Copy"), valign=Gtk.Align.CENTER, tooltip_text=_("Copy snippet to clipboard"))
+        copy_btn.add_css_class("flat")
+        file_row.add_suffix(copy_btn)
+        group.add(file_row)
+
+        # Monospace snippet area
+        config_buf = Gtk.TextBuffer()
+        config_view = Gtk.TextView(
+            buffer=config_buf, editable=False, monospace=True,
+            wrap_mode=Gtk.WrapMode.NONE,
+            margin_top=8, margin_bottom=8, margin_start=8, margin_end=8,
+        )
+        snippet_scroll = Gtk.ScrolledWindow(
+            hexpand=True, min_content_height=110,
+            hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+            vscrollbar_policy=Gtk.PolicyType.NEVER,
+        )
+        snippet_scroll.set_child(config_view)
+        snippet_frame = Gtk.Frame(margin_start=12, margin_end=12, margin_bottom=4)
+        snippet_frame.set_child(snippet_scroll)
+        group.add(snippet_frame)
+
+        apply_row = Adw.ActionRow(title=_("Apply to config file"))
+        apply_row.set_activatable(True)
+        apply_row.add_suffix(Gtk.Image.new_from_icon_name("document-save-symbolic"))
+        group.add(apply_row)
+
+        _mcp_active = [False]
+
+        def _update(idx: int):
+            client = _CLIENTS[idx]
+            config_buf.set_text(_snippet(client))
+            cfg = client["config_path"]
+            if cfg:
+                file_row.set_title(_("Config file"))
+                file_row.set_subtitle(str(cfg))
+                file_row.set_visible(True)
+                apply_row.set_subtitle(client["instruction"])
+                apply_row.set_visible(True)
+            else:
+                title = _("Terminal command") if client["format"] == "command" else _("Project config")
+                file_row.set_title(title)
+                file_row.set_subtitle(client["instruction"])
+                file_row.set_visible(True)
+                apply_row.set_visible(False)
+
+        def _on_client_changed(row, _):
+            if _mcp_active[0]:
+                _update(row.get_selected())
+
+        def _on_copy(_btn):
+            idx = client_row.get_selected()
+            snippet = _snippet(_CLIENTS[idx])
+            parent.get_clipboard().set(snippet)
+            _show_toast(parent, _("Copied to clipboard"))
+
+        def _on_apply(_row):
+            idx = client_row.get_selected()
+            client = _CLIENTS[idx]
+            if not client["config_path"]:
+                return
+            try:
+                cfg_path = Path(client["config_path"])
+                cfg_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    existing = json.loads(cfg_path.read_text()) if cfg_path.exists() else {}
+                except Exception:
+                    existing = {}
+                existing.setdefault("mcpServers", {})["remotex"] = {
+                    "command": "python3",
+                    "args": [mcp_server_path],
+                }
+                cfg_path.write_text(json.dumps(existing, indent=2))
+                _show_toast(parent, _("Config written — restart {client}").format(
+                    client=client["label"]))
+            except Exception as e:
+                _show_toast(parent, _("Failed: {error}").format(error=e))
+
+        client_row.connect("notify::selected", _on_client_changed)
+        copy_btn.connect("clicked", _on_copy)
+        apply_row.connect("activated", _on_apply)
+        _add_timeout(300, lambda: _mcp_active.__setitem__(0, True) or False)
+        _update(0)
+        page.add(group)
+
+    def _add_profiles_section():
+        if not is_pro_active() or not config:
+            return
+        _me = GLib.markup_escape_text
+        group = Adw.PreferencesGroup(title=_me(_("Execution Profiles")))
+        group.set_description(
+            _("Named execution contexts (user, working directory) assigned to buttons. "
+              "No passwords stored.")
+        )
+        manage_row = Adw.ActionRow(title=_me(_("Manage Profiles")))
+        manage_row.set_subtitle(_("Create, edit and delete execution profiles"))
+        manage_row.set_activatable(True)
+        manage_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        manage_row.connect("activated", lambda _: _on_manage_profiles())
+        group.add(manage_row)
+        export_row = Adw.ActionRow(title=_me(_("Export profiles")))
+        export_row.set_subtitle(_("Save profiles to a .rxprofiles file"))
+        export_row.set_activatable(True)
+        export_row.add_suffix(Gtk.Image.new_from_icon_name("document-save-symbolic"))
+        export_row.connect("activated", lambda _: _on_export_profiles())
+        group.add(export_row)
+        import_row = Adw.ActionRow(title=_me(_("Import profiles")))
+        import_row.set_subtitle(_("Restore profiles from a .rxprofiles file"))
+        import_row.set_activatable(True)
+        import_row.add_suffix(Gtk.Image.new_from_icon_name("document-open-symbolic"))
+        import_row.connect("activated", lambda _: _on_import_profiles())
+        group.add(import_row)
+        page.add(group)
+
+    def _on_manage_profiles():
+        from pro.dialogs.profiles_list_dialog import show_profiles_list
+        show_profiles_list(parent, config)
+
+    def _on_export_profiles():
+        file_dialog = Gtk.FileDialog(title=_("Export profiles"))
+        f = Gtk.FileFilter()
+        f.set_name("RemoteX profiles (*.rxprofiles)")
+        f.add_pattern("*.rxprofiles")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(f)
+        file_dialog.set_filters(filters)
+        file_dialog.set_initial_name("remotex.rxprofiles")
+        def on_done(dlg, result):
+            try:
+                gfile = dlg.save_finish(result)
+                if gfile:
+                    config.export_profiles_backup(Path(gfile.get_path()))
+                    _show_toast(parent, _("Profiles exported"))
+            except Exception as e:
+                _show_toast(parent, _("Export failed: {error}").format(error=e))
+        file_dialog.save(parent, None, on_done)
+
+    def _on_import_profiles():
+        file_dialog = Gtk.FileDialog(title=_("Import profiles"))
+        f = Gtk.FileFilter()
+        f.set_name("RemoteX profiles (*.rxprofiles)")
+        f.add_pattern("*.rxprofiles")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(f)
+        file_dialog.set_filters(filters)
+        def on_done(dlg, result):
+            try:
+                gfile = dlg.open_finish(result)
+                if gfile:
+                    config.import_profiles_backup(Path(gfile.get_path()))
+                    _show_toast(parent, _("Profiles imported — restart to apply"))
+            except Exception as e:
+                _show_toast(parent, _("Import failed: {error}").format(error=e))
+        file_dialog.open(parent, None, on_done)
+
+    def _add_backup_section():
+        if not is_pro_active() or not config:
+            return
+        _me = GLib.markup_escape_text
+        buttons_group = Adw.PreferencesGroup(title=_me(_("Buttons & Settings Backup")))
+        buttons_group.set_description(
+            _("Export your buttons and settings to a .rxbackup file. "
+              "Machines are not included — export them separately below.")
+        )
+        export_row = Adw.ActionRow(title=_me(_("Export buttons & settings")))
+        export_row.set_subtitle(_("Save buttons and preferences to a .rxbackup file"))
+        export_row.set_activatable(True)
+        export_row.add_suffix(Gtk.Image.new_from_icon_name("document-save-symbolic"))
+        export_row.connect("activated", lambda _: _on_export(parent, config, settings))
+        buttons_group.add(export_row)
+        import_row = Adw.ActionRow(title=_me(_("Import buttons & settings")))
+        import_row.set_subtitle(_("Restore from a .rxbackup file"))
+        import_row.set_activatable(True)
+        import_row.add_suffix(Gtk.Image.new_from_icon_name("document-open-symbolic"))
+        import_row.connect("activated", lambda _: _on_import(parent, config, settings))
+        buttons_group.add(import_row)
+        page.add(buttons_group)
+
+        machines_group = Adw.PreferencesGroup(title=_("Machines Backup"))
+        machines_group.set_description(
+            _("Export SSH machine definitions (hosts, usernames, ports) to a .rxmachines file. "
+              "SSH private keys are never stored — reconfigure them after restoring.")
+        )
+        export_machines_row = Adw.ActionRow(title=_("Export machines"))
+        export_machines_row.set_subtitle(_("Save machine list to a .rxmachines file"))
+        export_machines_row.set_activatable(True)
+        export_machines_row.add_suffix(Gtk.Image.new_from_icon_name("document-save-symbolic"))
+        export_machines_row.connect("activated", lambda _: _on_export_machines(parent, config))
+        machines_group.add(export_machines_row)
+        import_machines_row = Adw.ActionRow(title=_("Import machines"))
+        import_machines_row.set_subtitle(_("Restore machine list from a .rxmachines file"))
+        import_machines_row.set_activatable(True)
+        import_machines_row.add_suffix(Gtk.Image.new_from_icon_name("document-open-symbolic"))
+        import_machines_row.connect("activated", lambda _: _on_import_machines(parent, config))
+        machines_group.add(import_machines_row)
+        page.add(machines_group)
+
+    _add_execution_section()
+    _add_interface_section()
+    _add_grid_section()
+    _add_appearance_section()
+    _add_categories_section()
+    _add_icon_dirs_section()
+    _add_desktop_section()
+    _add_mcp_setup_section()
+    _add_profiles_section()
+    _add_backup_section()
+
+    license_group = Adw.PreferencesGroup(title=_("License"))
+    page.add(license_group)
+
+    def _on_license_changed():
+        dialog.close()
+        def _reopen():
+            show_preferences_dialog(parent, config)
+            return False
+        GLib.idle_add(_reopen)
+
+    license_rows: list = []
+    _build_license_section(license_group, license_rows, on_change=_on_license_changed, dialog=dialog)
+
+    dialog.present()
+    return dialog
+
+
+def _on_export(parent, config, settings):
+    from pathlib import Path
+    file_dialog = Gtk.FileDialog(title=_("Export config backup"))
+    filter_ = Gtk.FileFilter()
+    filter_.set_name("RemoteX backup (*.rxbackup)")
+    filter_.add_pattern("*.rxbackup")
+    filters = Gio.ListStore.new(Gtk.FileFilter)
+    filters.append(filter_)
+    file_dialog.set_filters(filters)
+    file_dialog.set_initial_name("remotex.rxbackup")
+
+    def on_done(dlg, result):
+        try:
+            gfile = dlg.save_finish(result)
+            if gfile:
+                config.export_backup(Path(gfile.get_path()), settings)
+                _show_toast(parent, _("Config exported successfully"))
+        except Exception as e:
+            _show_toast(parent, _("Export failed: {error}").format(error=e))
+
+    file_dialog.save(parent, None, on_done)
+
+
+def _on_import(parent, config, settings):
+    from pathlib import Path
+    file_dialog = Gtk.FileDialog(title=_("Import config backup"))
+    filter_ = Gtk.FileFilter()
+    filter_.set_name("RemoteX backup (*.rxbackup)")
+    filter_.add_pattern("*.rxbackup")
+    filters = Gio.ListStore.new(Gtk.FileFilter)
+    filters.append(filter_)
+    file_dialog.set_filters(filters)
+
+    def on_done(dlg, result):
+        try:
+            gfile = dlg.open_finish(result)
+            if gfile:
+                config.import_backup(Path(gfile.get_path()), settings)
+                _show_toast(parent, _("Config imported — restart RemoteX to apply all changes"))
+        except Exception as e:
+            _show_toast(parent, _("Import failed: {error}").format(error=e))
+
+    file_dialog.open(parent, None, on_done)
+
+
+def _on_export_machines(parent, config):
+    from pathlib import Path
+    file_dialog = Gtk.FileDialog(title=_("Export machines"))
+    filter_ = Gtk.FileFilter()
+    filter_.set_name("RemoteX machines (*.rxmachines)")
+    filter_.add_pattern("*.rxmachines")
+    filters = Gio.ListStore.new(Gtk.FileFilter)
+    filters.append(filter_)
+    file_dialog.set_filters(filters)
+    file_dialog.set_initial_name("remotex.rxmachines")
+
+    def on_done(dlg, result):
+        try:
+            gfile = dlg.save_finish(result)
+            if gfile:
+                config.export_machines_backup(Path(gfile.get_path()))
+                _show_toast(parent, _("Machines exported successfully"))
+        except Exception as e:
+            _show_toast(parent, _("Export failed: {error}").format(error=e))
+
+    file_dialog.save(parent, None, on_done)
+
+
+def _on_import_machines(parent, config):
+    from pathlib import Path
+    file_dialog = Gtk.FileDialog(title=_("Import machines"))
+    filter_ = Gtk.FileFilter()
+    filter_.set_name("RemoteX machines (*.rxmachines)")
+    filter_.add_pattern("*.rxmachines")
+    filters = Gio.ListStore.new(Gtk.FileFilter)
+    filters.append(filter_)
+    file_dialog.set_filters(filters)
+
+    def on_done(dlg, result):
+        try:
+            gfile = dlg.open_finish(result)
+            if gfile:
+                config.import_machines_backup(Path(gfile.get_path()))
+                _show_toast(parent, _("Machines imported — restart RemoteX to apply"))
+        except Exception as e:
+            _show_toast(parent, _("Import failed: {error}").format(error=e))
+
+    file_dialog.open(parent, None, on_done)
+
+
+def _show_toast(parent, message: str):
+    """Show a toast on the parent window if it has a toast overlay."""
+    try:
+        parent.show_toast(message)
+    except AttributeError:
+        pass
+
+
+def _build_license_section(group: Adw.PreferencesGroup, rows: list, on_change=None, dialog=None):
+    """Build (or rebuild) the license rows inside the given group."""
+    for row in rows:
+        group.remove(row)
+    rows.clear()
+
+    info = get_license_info()
+
+    def _do_deactivate(row):
+        row.set_sensitive(False)
+        row.set_title(_("Deactivating…"))
+        def _run():
+            try:
+                clear_license_key()
+            except Exception:
+                pass
+        def _done(_):
+            if on_change:
+                on_change()
+            else:
+                _build_license_section(group, rows)
+            return False
+        from utils.threading import run_in_thread
+        run_in_thread(_run, _done)
+
+    if info['active']:
+        # ── Pro active ───────────────────────────────────────────────────
+        is_yearly = info['type'] == 'yearly'
+        days = info['days_until_expiry']
+
+        if is_yearly:
+            title = _("RemoteX Pro — Yearly")
+            if days is not None and days <= 30:
+                subtitle = _("Expires in {days} days ({date}) — renew to keep Pro access").format(
+                    days=max(0, days), date=info['expires'])
+            else:
+                subtitle = _("Yearly license — expires on {date}").format(date=info['expires'] or '—')
+        else:
+            title = _("RemoteX Pro — Lifetime")
+            subtitle = _("Lifetime license — enjoy all Pro features!")
+
+        status_row = Adw.ActionRow(title=title)
+        status_row.set_subtitle(subtitle)
+        icon = Gtk.Image.new_from_icon_name("object-select-symbolic")
+        icon.add_css_class("success" if not (is_yearly and days is not None and days <= 30) else "warning")
+        status_row.add_suffix(icon)
+        rows.append(status_row)
+
+        key_row = Adw.ActionRow(title=_("License key"))
+        key = info['key']
+        masked = key[:4] + "·" * max(0, len(key) - 8) + key[-4:] if len(key) > 8 else key
+        key_row.set_subtitle(masked)
+        rows.append(key_row)
+
+        al = info.get('activation_limit')
+        au = info.get('activation_usage')
+        if al is not None and au is not None:
+            act_row = Adw.ActionRow(title=_("Activations"))
+            act_row.set_subtitle(_("{used} / {limit} devices").format(used=au, limit=al))
+            rows.append(act_row)
+
+        if is_yearly:
+            renew_row = Adw.ActionRow(title=_("Renew license"))
+            renew_row.set_subtitle(_("Get a new yearly key at the same price"))
+            renew_row.set_activatable(True)
+            renew_row.add_css_class("suggested-action")
+            renew_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+            renew_row.connect("activated", lambda _: _open_url(PRO_BUY_URL))
+            rows.append(renew_row)
+
+        deactivate_row = Adw.ActionRow(title=_("Deactivate license"))
+        deactivate_row.set_subtitle(_("Remove the license key from this device"))
+        deactivate_row.set_activatable(True)
+        deactivate_row.add_css_class("error")
+        deactivate_row.connect("activated", _do_deactivate)
+        rows.append(deactivate_row)
+
+    elif info['is_expired']:
+        # ── Yearly license expired ───────────────────────────────────────
+        status_row = Adw.ActionRow(title=_("License expired"))
+        status_row.set_subtitle(
+            _("Your yearly license expired on {date}. Free tier limits now apply.").format(
+                date=info['expires'] or '—')
+        )
+        icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        icon.add_css_class("error")
+        status_row.add_suffix(icon)
+        rows.append(status_row)
+
+        key_row = Adw.ActionRow(title=_("License key"))
+        key = info['key']
+        masked = key[:4] + "·" * max(0, len(key) - 8) + key[-4:] if len(key) > 8 else key
+        key_row.set_subtitle(masked)
+        rows.append(key_row)
+
+        renew_row = Adw.ActionRow(title=_("Renew license"))
+        renew_row.set_subtitle(_("Restore Pro access with a new license key"))
+        renew_row.set_activatable(True)
+        renew_row.add_css_class("suggested-action")
+        renew_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        renew_row.connect("activated", lambda _: _open_url(PRO_BUY_URL))
+        rows.append(renew_row)
+
+        deactivate_row = Adw.ActionRow(title=_("Remove expired key"))
+        deactivate_row.set_activatable(True)
+        deactivate_row.add_css_class("error")
+        deactivate_row.connect("activated", _do_deactivate)
+        rows.append(deactivate_row)
+
+    elif not PRO_AVAILABLE:
+        # ── Free build: upsell only, no activation flow ──────────────────
+        # The free binary has no license-validation code, so showing a
+        # key/email/Activate trio that cannot succeed would be misleading.
+        # Show the Free-tier status and a single CTA to the checkout.
+        status_row = Adw.ActionRow(title=_("Free tier"))
+        status_row.set_subtitle(
+            _("Limited to {btn_limit} custom buttons and {machine_limit} SSH machine. "
+              "Upgrade to Pro for unlimited access.").format(
+                btn_limit=FREE_BUTTON_LIMIT, machine_limit=FREE_MACHINE_LIMIT)
+        )
+        rows.append(status_row)
+
+        buy_row = Adw.ActionRow(title=_("Get RemoteX Pro — $29/year"))
+        buy_row.set_activatable(True)
+        buy_row.connect("activated", lambda _: _open_url(PRO_BUY_URL))
+        buy_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        rows.append(buy_row)
+
+    else:
+        trial = get_trial_info()
+        if trial['active']:
+            # ── Trial active ─────────────────────────────────────────────
+            days = trial['days_remaining']
+            expires = trial['expires_at'] or ''
+            status_row = Adw.ActionRow(title=_("Trial — RemoteX Pro"))
+            status_row.set_subtitle(
+                _("{days} day(s) remaining (until {date}) — enjoy full Pro access!").format(
+                    days=days, date=expires)
+            )
+            icon = Gtk.Image.new_from_icon_name("appointment-soon-symbolic")
+            icon.add_css_class("warning" if days <= 3 else "success")
+            status_row.add_suffix(icon)
+            rows.append(status_row)
+        else:
+            # ── Free tier (Pro build, no license, no trial) ──────────────
+            status_row = Adw.ActionRow(title=_("Free tier"))
+            status_row.set_subtitle(
+                _("Limited to {btn_limit} custom buttons and {machine_limit} SSH machine. "
+                  "Upgrade to Pro for unlimited access.").format(
+                    btn_limit=FREE_BUTTON_LIMIT, machine_limit=FREE_MACHINE_LIMIT)
+            )
+            rows.append(status_row)
+
+        key_entry = Adw.EntryRow(title=_("License key"))
+        key_entry.set_input_purpose(Gtk.InputPurpose.FREE_FORM)
+        key_entry.set_show_apply_button(False)
+        rows.append(key_entry)
+
+        email_entry = Adw.EntryRow(title=_("Purchase email"))
+        email_entry.set_input_purpose(Gtk.InputPurpose.EMAIL)
+        email_entry.set_show_apply_button(False)
+        email_entry.set_tooltip_text(_("The email address used when purchasing your license"))
+        rows.append(email_entry)
+
+        activate_row = Adw.ActionRow(title=_("Activate Pro"))
+        activate_row.set_subtitle(_("Enter your license key and purchase email, then click Activate"))
+        activate_row.set_activatable(True)
+        activate_row.add_css_class("suggested-action")
+        activate_row.connect("activated", lambda _: _on_activate(key_entry, email_entry, group, rows, dialog, on_change, activate_row))
+        rows.append(activate_row)
+
+        buy_row = Adw.ActionRow(title=_("Get RemoteX Pro — $29/year"))
+        buy_row.set_activatable(True)
+        buy_row.connect("activated", lambda _: _open_url(PRO_BUY_URL))
+        buy_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        rows.append(buy_row)
+
+    for row in rows:
+        group.add(row)
+
+
+def _sched(dialog, delay_ms, callback):
+    if dialog is None:
+        return GLib.timeout_add(delay_ms, callback)
+    if not hasattr(dialog, '_timeout_ids'):
+        dialog._timeout_ids = []
+    tid_holder = [None]
+    def _wrap():
+        result = callback()
+        if not result and dialog._timeout_ids and tid_holder[0] in dialog._timeout_ids:
+            dialog._timeout_ids.remove(tid_holder[0])
+        return result
+    tid = GLib.timeout_add(delay_ms, _wrap)
+    tid_holder[0] = tid
+    dialog._timeout_ids.append(tid)
+    return tid
+
+
+def _on_activate(key_entry: Adw.EntryRow, email_entry: Adw.EntryRow,
+                 group: Adw.PreferencesGroup, rows: list, dialog=None, on_change=None,
+                 activate_row=None):
+    key = key_entry.get_text().strip()
+    if not key:
+        key_entry.add_css_class("error")
+        _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
+        return
+
+    email = email_entry.get_text().strip()
+
+    # Disable while the network request runs to prevent double-click loops
+    if activate_row:
+        activate_row.set_sensitive(False)
+        activate_row.set_title(_("Activating…"))
+
+    def _run():
+        try:
+            return validate_license_online(key, email)
+        except Exception:
+            return (False, 'network_error', None)
+
+    def _on_result(result):
+        if activate_row:
+            activate_row.set_sensitive(True)
+            activate_row.set_title(_("Activate Pro"))
+
+        valid, license_type, expires = result
+        if not valid:
+            if license_type == 'network_error':
+                key_entry.add_css_class("error")
+                orig_title = key_entry.get_title()
+                key_entry.set_title(_("Internet connection required for activation"))
+                def _reset(entry=key_entry, t=orig_title):
+                    entry.remove_css_class("error")
+                    entry.set_title(t)
+                    return False
+                _sched(dialog, 3000, _reset)
+            elif license_type == 'email_mismatch':
+                email_entry.add_css_class("error")
+                orig_title = email_entry.get_title()
+                email_entry.set_title(_("Email does not match this license key"))
+                def _reset_email(entry=email_entry, t=orig_title):
+                    entry.remove_css_class("error")
+                    entry.set_title(t)
+                    return False
+                _sched(dialog, 3000, _reset_email)
+            elif license_type == 'limit_reached':
+                key_entry.add_css_class("error")
+                _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
+                _show_limit_reached_dialog(dialog)
+            else:
+                key_entry.add_css_class("error")
+                _sched(dialog, 1500, lambda: key_entry.remove_css_class("error") or False)
+            return False
+
+        if on_change:
+            on_change()
+        else:
+            _build_license_section(group, rows)
+        return False
+
+    from utils.threading import run_in_thread
+    run_in_thread(_run, _on_result)
+
+
+def _show_limit_reached_dialog(parent):
+    dlg = Adw.AlertDialog(
+        heading=_("Activation limit reached"),
+        body=_(
+            "You have reached the maximum number of activations for this license key.\n\n"
+            "To free up a slot, open RemoteX on another device and go to "
+            "Preferences → License → Deactivate, then try again here.\n\n"
+            "If you reinstalled your OS without deactivating first, "
+            "contact support at {email}."
+        ).format(email=SUPPORT_EMAIL),
+    )
+    dlg.add_response("ok", _("OK"))
+    dlg.present(parent)
+
+
+
+
+_THEME_TEMPLATE = """\
+/* RemoteX Custom Button Theme
+ *
+ * Selectors you can style:
+ *   .button-tile          — each button tile (background, border, shadow…)
+ *   .button-tile:hover    — mouse hover state
+ *   .button-tile:active   — pressed state
+ *   .button-tile .tile-label — text label
+ *
+ * Useful GTK named colors (adapt to the active system theme):
+ *   @accent_color         — accent color (e.g. blue on GNOME)
+ *   @accent_bg_color      — accent background
+ *   @accent_fg_color      — foreground on accent background (usually white)
+ *   @card_bg_color        — card surface color
+ *   @window_bg_color      — main window background
+ *   @borders              — border/separator color
+ *
+ * GTK CSS functions: shade(color, factor), alpha(color, factor), mix(a, b, factor)
+ *
+ * Example — purple gradient theme:
+ */
+
+.button-tile {
+  background: linear-gradient(135deg, #6a0dad 0%, #9b30d9 100%);
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.button-tile:hover {
+  background: linear-gradient(135deg, #7a1dbd 0%, #ab40e9 100%);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+.button-tile:active {
+  background: linear-gradient(135deg, #5a0090 0%, #8020c0 100%);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.button-tile .tile-label {
+  color: #ffffff;
+  font-weight: bold;
+}
+"""
+
+
+def _load_pencil_icon():
+    """Return a Gdk.Texture for the bundled pencil Bootstrap icon, or None."""
+    try:
+        from utils.icon_loader import load_icon_texture
+        return load_icon_texture('pencil', 16)
+    except Exception:
+        return None
+
+
+def _open_url(url: str):
+    # Single source of truth for URL launching lives in window.py
+    # (see _open_browser there).
+    from window import _open_browser
+    _open_browser(url)

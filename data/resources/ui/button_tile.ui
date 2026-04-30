@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <template class="ButtonTile" parent="GtkButton">
+    <property name="focusable">true</property>
+    <property name="receives-default">true</property>
+    <style>
+      <class name="button-tile"/>
+      <class name="flat"/>
+    </style>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">8</property>
+        <property name="halign">center</property>
+        <property name="valign">center</property>
+        <child>
+          <object class="GtkOverlay">
+            <property name="halign">center</property>
+            <child>
+              <object class="GtkImage" id="tile_icon">
+                <property name="pixel-size">32</property>
+                <property name="icon-name">utilities-terminal-symbolic</property>
+              </object>
+            </child>
+            <child type="overlay">
+              <object class="GtkSpinner" id="tile_spinner">
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="visible">false</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="tile_label">
+            <property name="wrap">true</property>
+            <property name="wrap-mode">word-char</property>
+            <property name="justify">center</property>
+            <property name="max-width-chars">12</property>
+            <style>
+              <class name="tile-label"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

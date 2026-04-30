@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.github.remotex.RemoteX</id>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+
+  <name>RemoteX</name>
+  <summary>Visual button grid for local and SSH shell commands</summary>
+
+  <description>
+    <p>
+      RemoteX gives you a Stream Deck-style button grid for launching shell
+      commands and SSH commands on remote servers — without touching the
+      terminal. Click a button, the command runs.
+    </p>
+    <p>Free tier features:</p>
+    <ul>
+      <li>Run local shell commands with a single click</li>
+      <li>Up to 3 custom buttons</li>
+      <li>Pre-loaded Linux Essentials and Development commands</li>
+      <li>Organize buttons by category</li>
+      <li>11 interface languages</li>
+    </ul>
+    <p>Pro features:</p>
+    <ul>
+      <li>Unlimited custom buttons</li>
+      <li>SSH remote machines — unlimited</li>
+      <li>Multi-machine command dispatch</li>
+      <li>Custom button themes and appearance</li>
+      <li>Config backup and restore</li>
+      <li>AI integration via MCP protocol (Claude, Cursor, etc.)</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.github.remotex.RemoteX.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main window with button grid</caption>
+      <image>https://neurocontrarian.github.io/remotex/assets/main-window.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Button editor</caption>
+      <image>https://neurocontrarian.github.io/remotex/assets/command-dialog.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Preferences — General and Grid Layout</caption>
+      <image>https://neurocontrarian.github.io/remotex/assets/preferences-general.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Category bar and context menu</caption>
+      <image>https://neurocontrarian.github.io/remotex/assets/categories-context-menu.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>SSH machine configuration</caption>
+      <image>https://neurocontrarian.github.io/remotex/assets/machine-dialog.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://neurocontrarian.github.io/remotex</url>
+  <url type="bugtracker">https://github.com/neurocontrarian/remotex/issues</url>
+  <url type="help">https://neurocontrarian.github.io/remotex/quick-start/</url>
+
+  <developer>
+    <name>neurocontrarian</name>
+  </developer>
+
+  <provides>
+    <binary>remotex</binary>
+  </provides>
+
+  <releases>
+    <release version="1.5.4" date="2026-04-25">
+      <description>
+        <p>Wiki screenshots completed, app version synced.</p>
+      </description>
+    </release>
+    <release version="1.5.0" date="2026-04-10">
+      <description>
+        <p>Pro tier, MCP server (16 tools), multi-machine dispatch, execution modes.</p>
+      </description>
+    </release>
+    <release version="1.4.0" date="2026-04-05">
+      <description>
+        <p>Remote SSH terminal mode with sudo support.</p>
+      </description>
+    </release>
+    <release version="1.3.0" date="2026-03-20">
+      <description>
+        <p>Internationalisation (11 languages), custom button themes.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+
+  <categories>
+    <category>System</category>
+    <category>Utility</category>
+    <category>Network</category>
+  </categories>
+
+  <keywords>
+    <keyword>ssh</keyword>
+    <keyword>remote</keyword>
+    <keyword>terminal</keyword>
+    <keyword>shell</keyword>
+    <keyword>command</keyword>
+    <keyword>automation</keyword>
+    <keyword>launcher</keyword>
+  </keywords>
+</component>

@@ -1,0 +1,12 @@
+option('profile',
+  type: 'combo',
+  choices: ['default', 'development'],
+  value: 'default',
+  description: 'Build profile'
+)
+
+option('pro',
+  type: 'boolean',
+  value: true,
+  description: 'Include proprietary Pro modules (SSH, MCP, multi-machine, custom themes). Set to false for the open-source MIT free build.'
+)

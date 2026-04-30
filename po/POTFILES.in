@@ -1,0 +1,4 @@
+src/main.py
+src/window.py
+data/resources/ui/window.ui
+data/com.github.remotex.RemoteX.desktop.in
