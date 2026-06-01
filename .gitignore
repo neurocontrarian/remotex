@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+.venv-mac/
+build/
+dist/
+packaging/macos/dist/
+packaging/macos/build/
+packaging/macos/*.icns
+packaging/macos/Commandeck.iconset/
+.appimage-build/
+.DS_Store
+*.swp

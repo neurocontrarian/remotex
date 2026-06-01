@@ -1,0 +1,73 @@
+/* Commandeck base QSS */
+
+QFrame#ButtonTile {
+    border-radius: 12px;
+    border: 1px solid palette(mid);
+    background-color: palette(button);
+    padding: 4px;
+}
+
+QFrame#ButtonTile:hover {
+    background-color: palette(highlight);
+    border-color: palette(highlight);
+}
+
+QFrame#ButtonTile:disabled {
+    opacity: 0.6;
+}
+
+/* running state */
+QFrame#ButtonTile[running="true"] {
+    opacity: 0.65;
+}
+
+/* flash states */
+QFrame#ButtonTile[success="true"] {
+    background-color: #2ec27e;
+    border-color: #2ec27e;
+}
+
+QFrame#ButtonTile[error="true"] {
+    background-color: #e01b24;
+    border-color: #e01b24;
+}
+
+/* multi-select */
+QFrame#ButtonTile[selected="true"] {
+    border: 3px solid palette(highlight);
+    background-color: palette(highlight);
+    color: palette(highlighted-text);
+}
+
+QLabel#TileLabel {
+    font-weight: bold;
+    font-size: 9pt;
+    background: transparent;
+}
+
+/* ── Size variants ────────────────────────────────────────────────── */
+
+QFrame#ButtonTile[tile-size="small"] {
+    border-radius: 8px;
+}
+
+QFrame#ButtonTile[tile-size="small"] QLabel#TileLabel {
+    font-size: 8pt;
+}
+
+QFrame#ButtonTile[tile-size="large"] QLabel#TileLabel {
+    font-size: 11pt;
+}
+
+/* Themes are injected by window._apply_theme() — see _THEME_QSS dict. */
+
+/* category bar buttons */
+QToolButton {
+    border-radius: 12px;
+    padding: 4px 10px;
+}
+
+QToolButton:checked {
+    background-color: palette(highlight);
+    color: palette(highlighted-text);
+}
